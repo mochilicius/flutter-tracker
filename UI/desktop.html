@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Activity Tracker</title>
+  <style>
+    body {
+      font-family: Segoe UI, Arial, sans-serif;
+      margin: 16px;
+    }
+
+    .container {
+      max-width: 900px;
+      margin: 0 auto;
+      display: grid;
+      gap: 16px;
+    }
+
+    .card {
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      padding: 16px;
+    }
+
+    h1, h2 {
+      margin: 0 0 12px;
+    }
+
+    .row {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    input, select, button {
+      padding: 8px 10px;
+      border-radius: 8px;
+      border: 1px solid #d1d5db;
+      font-size: 14px;
+    }
+
+    button {
+      cursor: pointer;
+    }
+
+    .pill {
+      display: inline-flex;
+      gap: 8px;
+      align-items: center;
+      border-radius: 999px;
+      padding: 6px 10px;
+      margin: 4px;
+      border: 1px solid #ccc;
+    }
+
+    pre {
+      padding: 12px;
+      border-radius: 10px;
+      overflow: auto;
+      min-height: 80px;
+      border: 1px solid #ccc;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="card">
+      <h1>Activity Tracker</h1>
+      <div id="health">Checking app bridge...</div>
+    </div>
+
+    <div class="card">
+      <h2>Add Rule</h2>
+      <div class="row">
+        <select id="process">
+          <option value="">Select app</option>
+        </select>
+        <button type="button" onclick="loadProcesses()">Refresh apps</button>
+        <select id="category">
+          <option value="">Select category</option>
+          <option value="studying">Studying</option>
+          <option value="work">Work</option>
+          <option value="gaming">Gaming</option>
+          <option value="entertainment">Entertainment</option>
+          <option value="social">Social</option>
+          <option value="other">Other</option>
+        </select>
+        <button onclick="addRule()">Add</button>
+      </div>
+      <div id="rules" style="margin-top: 10px;"></div>
+    </div>
+
+    <div class="card">
+      <h2>Today Totals</h2>
+      <button class="secondary" onclick="loadTotals()">Refresh</button>
+      <pre id="totals"></pre>
+    </div>
+  </div>
+
+  <script>
+    async function api() {
+      return window.pywebview && window.pywebview.api;
+    }
+
+    async function checkHealth() {
+      const bridge = await api();
+      if (!bridge) {
+        document.getElementById('health').textContent = 'Bridge unavailable';
+        return;
+      }
+      const result = await bridge.health();
+      document.getElementById('health').textContent = `Status: ${result.status} (${result.mode})`;
+    }
+
+    async function loadRules() {
+      const bridge = await api();
+      if (!bridge) return;
+      const rules = await bridge.get_rules();
+      const root = document.getElementById('rules');
+      root.innerHTML = '';
+
+      rules.forEach((rule) => {
+        const item = document.createElement('span');
+        item.className = 'pill';
+        const text = document.createElement('span');
+        text.textContent = `${rule.process} → ${rule.category}`;
+        const btn = document.createElement('button');
+        btn.textContent = 'Delete';
+        btn.className = 'secondary';
+        btn.onclick = async () => {
+          await bridge.delete_rule(rule.process);
+          await loadRules();
+          await loadTotals();
+        };
+
+        item.appendChild(text);
+        item.appendChild(btn);
+        root.appendChild(item);
+      });
+    }
+
+    async function addRule() {
+      const processInput = document.getElementById('process');
+      const categoryInput = document.getElementById('category');
+      const process = processInput.value;
+      const category = categoryInput.value;
+
+      const bridge = await api();
+      if (!bridge || !process || !category) return;
+
+      await bridge.add_rule(process, category);
+      processInput.value = '';
+      categoryInput.value = '';
+      await loadRules();
+      await loadTotals();
+    }
+
+    async function loadProcesses() {
+      const bridge = await api();
+      if (!bridge) return;
+
+      const processSelect = document.getElementById('process');
+      const current = processSelect.value;
+      const processes = await bridge.get_running_processes();
+
+      processSelect.innerHTML = '';
+      const placeholder = document.createElement('option');
+      placeholder.value = '';
+      placeholder.textContent = 'Select app';
+      processSelect.appendChild(placeholder);
+
+      processes.forEach((processName) => {
+        const option = document.createElement('option');
+        option.value = processName;
+        option.textContent = processName;
+        processSelect.appendChild(option);
+      });
+
+      if (current && processes.includes(current)) {
+        processSelect.value = current;
+      }
+    }
+
+    async function loadTotals() {
+      const bridge = await api();
+      if (!bridge) return;
+      const totals = await bridge.get_today_totals();
+      document.getElementById('totals').textContent = JSON.stringify(totals, null, 2);
+    }
+
+    setInterval(loadTotals, 2000);
+
+    window.addEventListener('pywebviewready', async () => {
+      await checkHealth();
+      await loadProcesses();
+      await loadRules();
+      await loadTotals();
+    });
+  </script>
+</body>
+</html>
