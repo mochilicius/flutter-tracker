@@ -1,0 +1,7 @@
+{
+  "startOnBoot": false,
+  "minimizeToTrayOnClose": true,
+  "pingMs": 15000,
+  "retentionDays": 30,
+  "at": "2026-03-05T18:23:30.096Z"
+}

@@ -24,6 +24,7 @@ export class MainComponent implements OnInit, OnChanges, OnDestroy {
   totalTracked = signal('0m');
   categoryTotals = signal<Record<string, number>>({});
   appTotals = signal<Record<string, number>>({});
+  categoryColors = signal<Record<string, string>>({});
   showAddCategory = signal(false);
   newCategoryName = '';
   editingCategory = signal<string | null>(null);
@@ -43,6 +44,7 @@ export class MainComponent implements OnInit, OnChanges, OnDestroy {
   ];
 
   ngOnInit(): void {
+    this.loadCategoryColors();
     this.loadRules();
     this.refreshTotals();
     this.startPolling();
@@ -90,6 +92,12 @@ export class MainComponent implements OnInit, OnChanges, OnDestroy {
       this.categories.set(
         [...map.entries()].map(([name, apps]) => ({ name, apps }))
       );
+    });
+  }
+
+  loadCategoryColors(): void {
+    this.tracker.getCategoryColors().subscribe(colors => {
+      this.categoryColors.set(colors ?? {});
     });
   }
 
@@ -195,6 +203,24 @@ export class MainComponent implements OnInit, OnChanges, OnDestroy {
     });
   }
 
+  getCategoryColor(category: string, fallbackIndex?: number): string {
+    const fromState = this.categoryColors()[category];
+    if (fromState) {
+      return fromState;
+    }
+    const index = fallbackIndex ?? 0;
+    return this.DONUT_COLORS[index % this.DONUT_COLORS.length];
+  }
+
+  updateCategoryColor(category: string, color: string): void {
+    const normalized = this.normalizeHexColor(color);
+    if (!normalized) {
+      return;
+    }
+    this.categoryColors.update(current => ({ ...current, [category]: normalized }));
+    this.tracker.setCategoryColor(category, normalized).subscribe();
+  }
+
   private buildDonut(t: Totals): void {
     this.categoryTotals.set(t.totals_seconds);
     this.appTotals.set(t.app_totals_seconds ?? {});
@@ -211,7 +237,7 @@ export class MainComponent implements OnInit, OnChanges, OnDestroy {
     const segments: DonutSegment[] = entries.map(([cat, secs], i) => {
       const len = (secs / total) * usable;
       const seg: DonutSegment = {
-        color: this.DONUT_COLORS[i % this.DONUT_COLORS.length],
+        color: this.getCategoryColor(cat, i),
         offset,
         length: len,
         category: cat,
@@ -229,5 +255,16 @@ export class MainComponent implements OnInit, OnChanges, OnDestroy {
     if (h > 0) return `${h}h ${m}m`;
     if (m > 0) return `${m}m`;
     return `${Math.round(seconds)}s`;
+  }
+
+  private normalizeHexColor(color: string): string | null {
+    if (typeof color !== 'string') {
+      return null;
+    }
+    const trimmed = color.trim();
+    if (!/^#[0-9a-fA-F]{6}$/.test(trimmed)) {
+      return null;
+    }
+    return trimmed.toUpperCase();
   }
 }

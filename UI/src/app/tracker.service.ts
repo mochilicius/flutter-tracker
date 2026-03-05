@@ -34,6 +34,14 @@ export interface Totals {
   active_process: string;
 }
 
+export interface RetentionSettingsBody {
+  retention_days: number;
+}
+
+export interface ImportStateBody {
+  state: Record<string, unknown>;
+}
+
 @Injectable({ providedIn: 'root' })
 export class TrackerService {
   constructor(private http: HttpClient) {}
@@ -56,5 +64,27 @@ export class TrackerService {
 
   getTotals(): Observable<Totals> {
     return this.http.get<Totals>(`${API}/totals`);
+  }
+
+  setRetentionDays(days: number): Observable<{ ok: boolean; retention_days: number }> {
+    return this.http.post<{ ok: boolean; retention_days: number }>(`${API}/settings/retention-days`, {
+      retention_days: days,
+    });
+  }
+
+  reloadCache(): Observable<{ ok: boolean }> {
+    return this.http.post<{ ok: boolean }>(`${API}/settings/reload-cache`, {});
+  }
+
+  importState(state: Record<string, unknown>): Observable<{ ok: boolean }> {
+    return this.http.post<{ ok: boolean }>(`${API}/settings/import-state`, { state });
+  }
+
+  getCategoryColors(): Observable<Record<string, string>> {
+    return this.http.get<Record<string, string>>(`${API}/category-colors`);
+  }
+
+  setCategoryColor(category: string, color: string): Observable<{ ok: boolean }> {
+    return this.http.post<{ ok: boolean }>(`${API}/category-colors`, { category, color });
   }
 }

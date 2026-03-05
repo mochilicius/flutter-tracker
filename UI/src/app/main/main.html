@@ -1,5 +1,5 @@
 <div class="page-header">
-  <h1>Time Tracker</h1>
+  <h1>Time Management</h1>
   @if (activeProcess()) {
     <p-tag [value]="activeProcess()" icon="pi pi-circle-fill"
       [style]="{'background':'rgba(237,187,180,0.12)','color':'#EDBBB4','border':'1px solid rgba(237,187,180,0.3)','border-radius':'999px','font-size':'12px'}" />
@@ -26,7 +26,7 @@
 
 <div class="category-grid">
   @for (cat of categories(); track cat.name) {
-    <div class="category-card">
+    <div class="category-card" [style.border-color]="getCategoryColor(cat.name)">
       <div class="card-header">
         @if (editingCategory() === cat.name) {
           <p-floatlabel variant="on" class="edit-name-floatlabel">
@@ -43,6 +43,13 @@
           <p-button icon="pi pi-times" size="small" [text]="true" severity="secondary"
             (onClick)="editingCategory.set(null)" />
         } @else {
+          <input
+            class="category-color"
+            type="color"
+            [value]="getCategoryColor(cat.name)"
+            [attr.aria-label]="'Accent color for ' + cat.name"
+            (change)="updateCategoryColor(cat.name, $any($event.target).value)"
+          />
           <span class="card-name">{{ cat.name }}</span>
           @if (getCatTime(cat.name)) {
             <span class="card-time">{{ getCatTime(cat.name) }}</span>

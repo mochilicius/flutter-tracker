@@ -54,6 +54,28 @@
 	white-space: nowrap;
 }
 
+.category-color {
+	appearance: none;
+	-webkit-appearance: none;
+	width: 18px;
+	height: 18px;
+	padding: 0;
+	border: 1px solid var(--border);
+	border-radius: 50%;
+	background: transparent;
+	cursor: pointer;
+	flex-shrink: 0;
+
+	&::-webkit-color-swatch-wrapper {
+		padding: 0;
+	}
+
+	&::-webkit-color-swatch {
+		border: none;
+		border-radius: 50%;
+	}
+}
+
 .card-time {
 	font-size: 11px;
 	color: var(--muted);

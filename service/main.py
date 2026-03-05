@@ -3,7 +3,7 @@ from __future__ import annotations
 import atexit
 import json
 from dataclasses import dataclass
-from datetime import date
+from datetime import date, datetime, timedelta
 from pathlib import Path
 import threading
 import time
@@ -57,12 +57,29 @@ class RuleBody(BaseModel):
     category: str
 
 
+class RetentionBody(BaseModel):
+    retention_days: int
+
+
+class ImportStateBody(BaseModel):
+    state: dict
+
+
+class CategoryColorBody(BaseModel):
+    category: str
+    color: str
+
+
 class Tracker:
     def __init__(self, state: TrackerState):
         self._state = state
         self._rules: dict[str, str] = {}
         self._totals_seconds: dict[str, float] = {}
         self._app_totals_seconds: dict[str, float] = {}
+        self._daily_totals_seconds: dict[str, dict[str, float]] = {}
+        self._daily_app_totals_seconds: dict[str, dict[str, float]] = {}
+        self._category_colors: dict[str, str] = {}
+        self._retention_days = 30
 
     # ── Persistence ──────────────────────────────────────────────────────────
 
@@ -74,6 +91,21 @@ class Tracker:
             self._rules = {k.lower(): v for k, v in data.get("rules", {}).items()}
             self._totals_seconds = data.get("totals_seconds", {})
             self._app_totals_seconds = data.get("app_totals_seconds", {})
+            self._daily_totals_seconds = data.get("daily_totals_seconds", {})
+            self._daily_app_totals_seconds = data.get("daily_app_totals_seconds", {})
+            self._category_colors = {
+                str(k): str(v)
+                for k, v in data.get("category_colors", {}).items()
+                if isinstance(k, str) and isinstance(v, str)
+            }
+            self._retention_days = self._normalize_retention_days(data.get("retention_days", 30))
+
+            # Backward compatibility for existing state files without dated logs.
+            today = date.today().isoformat()
+            if today not in self._daily_totals_seconds and self._totals_seconds:
+                self._daily_totals_seconds[today] = dict(self._totals_seconds)
+            if today not in self._daily_app_totals_seconds and self._app_totals_seconds:
+                self._daily_app_totals_seconds[today] = dict(self._app_totals_seconds)
         except Exception:
             pass
 
@@ -84,6 +116,10 @@ class Tracker:
                 "rules": self._rules,
                 "totals_seconds": self._totals_seconds,
                 "app_totals_seconds": self._app_totals_seconds,
+                "daily_totals_seconds": self._daily_totals_seconds,
+                "daily_app_totals_seconds": self._daily_app_totals_seconds,
+                "category_colors": self._category_colors,
+                "retention_days": self._retention_days,
             }, indent=2),
             encoding="utf-8",
         )
@@ -125,18 +161,33 @@ class Tracker:
             return True
         return False
 
+    def get_category_colors(self) -> dict[str, str]:
+        return dict(sorted(self._category_colors.items()))
+
+    def set_category_color(self, category: str, color: str) -> bool:
+        cat = category.strip()
+        if not cat:
+            return False
+        if not self._is_valid_hex_color(color):
+            return False
+        self._category_colors[cat] = color.upper()
+        return True
+
     # ── Totals ───────────────────────────────────────────────────────────────
 
     def get_today_totals(self) -> dict:
+        today = date.today().isoformat()
+        todays_totals = self._daily_totals_seconds.get(today, {})
+        todays_app_totals = self._daily_app_totals_seconds.get(today, {})
         return {
-            "date": date.today().isoformat(),
+            "date": today,
             "totals_seconds": {
                 cat: round(secs, 1)
-                for cat, secs in sorted(self._totals_seconds.items())
+                for cat, secs in sorted(todays_totals.items())
             },
             "app_totals_seconds": {
                 app: round(secs, 1)
-                for app, secs in sorted(self._app_totals_seconds.items())
+                for app, secs in sorted(todays_app_totals.items())
             },
             "active_process": self._state.active_process,
         }
@@ -145,8 +196,118 @@ class Tracker:
         key = process_name.lower()
         cat = self._rules.get(key)
         if cat:
+            today = date.today().isoformat()
+            day_totals = self._daily_totals_seconds.setdefault(today, {})
+            day_app_totals = self._daily_app_totals_seconds.setdefault(today, {})
+
             self._totals_seconds[cat] = self._totals_seconds.get(cat, 0.0) + elapsed
             self._app_totals_seconds[key] = self._app_totals_seconds.get(key, 0.0) + elapsed
+            day_totals[cat] = day_totals.get(cat, 0.0) + elapsed
+            day_app_totals[key] = day_app_totals.get(key, 0.0) + elapsed
+
+    def set_retention_days(self, days: int) -> int:
+        self._retention_days = self._normalize_retention_days(days)
+        return self._retention_days
+
+    def get_retention_days(self) -> int:
+        return self._retention_days
+
+    def on_startup(self) -> None:
+        removed_days = self.clear_old_dated_logs()
+        print(f"[startup] retention_days={self._retention_days}, removed_dated_logs={removed_days}")
+
+    def reload_from_disk(self, path: Path) -> None:
+        self._rules = {}
+        self._totals_seconds = {}
+        self._app_totals_seconds = {}
+        self._daily_totals_seconds = {}
+        self._daily_app_totals_seconds = {}
+        self._category_colors = {}
+        self._retention_days = 30
+        self.load(path)
+
+    def import_state(self, imported: dict) -> bool:
+        if not isinstance(imported, dict):
+            return False
+
+        self._rules = {
+            str(k).lower(): str(v)
+            for k, v in imported.get("rules", {}).items()
+            if isinstance(k, str) and isinstance(v, str) and k.strip() and v.strip()
+        }
+        self._totals_seconds = self._normalize_number_map(imported.get("totals_seconds", {}))
+        self._app_totals_seconds = self._normalize_number_map(imported.get("app_totals_seconds", {}))
+        self._daily_totals_seconds = self._normalize_nested_number_map(imported.get("daily_totals_seconds", {}))
+        self._daily_app_totals_seconds = self._normalize_nested_number_map(imported.get("daily_app_totals_seconds", {}))
+        self._category_colors = {
+            str(k): str(v).upper()
+            for k, v in imported.get("category_colors", {}).items()
+            if isinstance(k, str) and isinstance(v, str) and self._is_valid_hex_color(v)
+        }
+        self._retention_days = self._normalize_retention_days(imported.get("retention_days", 30))
+        self.on_startup()
+        return True
+
+    def clear_old_dated_logs(self) -> int:
+        cutoff = date.today() - timedelta(days=self._retention_days)
+        before = len(self._daily_totals_seconds)
+        self._daily_totals_seconds = {
+            day: totals
+            for day, totals in self._daily_totals_seconds.items()
+            if self._is_on_or_after_cutoff(day, cutoff)
+        }
+        self._daily_app_totals_seconds = {
+            day: totals
+            for day, totals in self._daily_app_totals_seconds.items()
+            if self._is_on_or_after_cutoff(day, cutoff)
+        }
+        after = len(self._daily_totals_seconds)
+        return max(0, before - after)
+
+    def _normalize_retention_days(self, days: int) -> int:
+        try:
+            parsed = int(days)
+        except Exception:
+            return 30
+        return max(1, parsed)
+
+    def _is_on_or_after_cutoff(self, day: str, cutoff: date) -> bool:
+        try:
+            parsed = datetime.strptime(day, "%Y-%m-%d").date()
+        except ValueError:
+            return False
+        return parsed >= cutoff
+
+    def _normalize_number_map(self, value: dict) -> dict[str, float]:
+        if not isinstance(value, dict):
+            return {}
+        result: dict[str, float] = {}
+        for key, raw in value.items():
+            if not isinstance(key, str):
+                continue
+            try:
+                result[key] = float(raw)
+            except Exception:
+                continue
+        return result
+
+    def _normalize_nested_number_map(self, value: dict) -> dict[str, dict[str, float]]:
+        if not isinstance(value, dict):
+            return {}
+        result: dict[str, dict[str, float]] = {}
+        for day, totals in value.items():
+            if not isinstance(day, str):
+                continue
+            result[day] = self._normalize_number_map(totals)
+        return result
+
+    def _is_valid_hex_color(self, color: str) -> bool:
+        if not isinstance(color, str):
+            return False
+        if len(color) != 7 or not color.startswith("#"):
+            return False
+        hex_part = color[1:]
+        return all(ch in "0123456789abcdefABCDEF" for ch in hex_part)
 
 
 def get_foreground_process_name() -> str:
@@ -185,7 +346,12 @@ atexit.register(tracker.save, DATA_FILE)
 app = FastAPI()
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:4200"],
+    allow_origins=[
+        "http://localhost:4200",
+        "http://127.0.0.1:4200",
+        "http://localhost:4317",
+        "http://127.0.0.1:4317",
+    ],
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -193,6 +359,8 @@ app.add_middleware(
 
 @app.on_event("startup")
 def _start_tracker() -> None:
+    tracker.on_startup()
+    tracker.save(DATA_FILE)
     threading.Thread(target=run_tracker, args=(tracker, state), daemon=True).start()
 
 
@@ -224,6 +392,47 @@ def get_processes():
 @app.get("/totals")
 def get_totals():
     return tracker.get_today_totals()
+
+
+@app.post("/settings/retention-days")
+def set_retention_days(body: RetentionBody):
+    days = tracker.set_retention_days(body.retention_days)
+    removed_days = tracker.clear_old_dated_logs()
+    tracker.save(DATA_FILE)
+    print(f"[settings] retention_days={days}, removed_dated_logs={removed_days}")
+    return {"ok": True, "retention_days": days}
+
+
+@app.post("/settings/reload-cache")
+def reload_cache():
+    tracker.reload_from_disk(DATA_FILE)
+    tracker.on_startup()
+    tracker.save(DATA_FILE)
+    print("[settings] cache reloaded from tracker_state.json")
+    return {"ok": True}
+
+
+@app.post("/settings/import-state")
+def import_state(body: ImportStateBody):
+    ok = tracker.import_state(body.state)
+    if not ok:
+        return {"ok": False}
+    tracker.save(DATA_FILE)
+    print("[settings] imported state from file")
+    return {"ok": True}
+
+
+@app.get("/category-colors")
+def get_category_colors():
+    return tracker.get_category_colors()
+
+
+@app.post("/category-colors")
+def set_category_color(body: CategoryColorBody):
+    ok = tracker.set_category_color(body.category, body.color)
+    if ok:
+        tracker.save(DATA_FILE)
+    return {"ok": ok}
 
 
 if __name__ == "__main__":

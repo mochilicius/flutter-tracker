@@ -38,6 +38,82 @@
     </p-inputNumber>
 
   </div>
+
+  <div class="settings-field settings-toggle-row">
+    <div>
+      <h3>Start on system boot</h3>
+      <p class="field-help">Launch the app automatically when you sign in.</p>
+    </div>
+    <label class="switch" for="startOnBoot">
+      <input
+        id="startOnBoot"
+        type="checkbox"
+        [ngModel]="startOnBoot"
+        (ngModelChange)="onStartOnBootChange($event)"
+      />
+      <span class="slider" aria-hidden="true"></span>
+    </label>
+  </div>
+
+  <div class="settings-field settings-toggle-row">
+    <div>
+      <h3>Minimize to tray on close</h3>
+      <p class="field-help">When closing the window, keep the app running in the system tray.</p>
+    </div>
+    <label class="switch" for="minimizeTray">
+      <input
+        id="minimizeTray"
+        type="checkbox"
+        [ngModel]="minimizeToTrayOnClose"
+        (ngModelChange)="onMinimizeToTrayChange($event)"
+      />
+      <span class="slider" aria-hidden="true"></span>
+    </label>
+  </div>
+
+  <div class="settings-field">
+    <h3>Data retention (days)</h3>
+    <p class="field-help">
+      Keep dated logs for this many days. Older logs are removed at service startup.
+    </p>
+    <p-inputNumber
+      inputId="retentionDays"
+      [ngModel]="retentionDays"
+      (ngModelChange)="onRetentionChange($event)"
+      [showButtons]="true"
+      mode="decimal"
+      [min]="1"
+      [step]="1">
+    </p-inputNumber>
+
+  </div>
+
+  <div class="settings-field">
+    <h3>State file tools</h3>
+    <p class="field-help">
+      Reload tracker cache from disk, or import a JSON state file to replace current tracker data.
+    </p>
+    <div class="settings-actions">
+      <p-button
+        label="Reload cache"
+        icon="pi pi-sync"
+        size="small"
+        severity="secondary"
+        (onClick)="reloadCache()"
+      ></p-button>
+      <label class="import-button" for="stateImport">
+        <i class="pi pi-upload" aria-hidden="true"></i>
+        Import state JSON
+      </label>
+      <input
+        id="stateImport"
+        class="state-import-input"
+        type="file"
+        accept="application/json,.json"
+        (change)="importStateFile($event)"
+      />
+    </div>
+  </div>
 </section>
 
 <section class="placeholder">

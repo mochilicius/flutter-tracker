@@ -8,13 +8,14 @@
 	--warm: #EDBBB4;
 	--card-bg: #352f5a;
 	display: block;
-	min-height: 100vh;
+	height: 100%;
+	overflow: hidden;
 	color: var(--text);
 	background: var(--bg);
 }
 
 .shell {
-	min-height: 100vh;
+	height: 100%;
 	display: grid;
 	grid-template-rows: 44px 1fr;
 }
@@ -95,6 +96,7 @@
 	display: grid;
 	grid-template-columns: 56px 1fr;
 	overflow: hidden;
+	min-height: 0;
 }
 
 /* ── Sidebar nav ── */
@@ -137,6 +139,31 @@
 .content {
 	padding: 28px 32px;
 	overflow-y: auto;
+	min-height: 0;
+
+	/* Minimal scrollbar: thin purple line, transparent track */
+	scrollbar-width: thin;
+	scrollbar-color: var(--panel) transparent;
+
+	&::-webkit-scrollbar {
+		width: 6px;
+		height: 6px;
+	}
+
+	&::-webkit-scrollbar-track {
+		background: transparent;
+	}
+
+	&::-webkit-scrollbar-thumb {
+		background: var(--panel);
+		border-radius: 999px;
+	}
+
+	&::-webkit-scrollbar-button,
+	&::-webkit-scrollbar-corner {
+		display: none;
+		background: transparent;
+	}
 }
 
 @media (max-width: 640px) {

@@ -5,7 +5,7 @@
         <path d="M20 4c-4 0-8 2-10.5 5.4c-2.1 2.7-3.2 5.9-3.2 9.3v1.3h1.3c3.4 0 6.6-1.1 9.3-3.2C20 14.3 22 10 22 6V4z"></path>
         <path d="M6.3 19.9l8.2-8.2"></path>
       </svg>
-      <span>Time Tracker</span>
+      <span>Flutter</span>
     </div>
 
     <div class="window-controls">
@@ -40,7 +40,16 @@
           <app-stats />
         }
         @case ('settings') {
-          <app-settings [pingValue]="pingMs()" (pingValueChange)="updatePingMs($event)" />
+          <app-settings
+            [pingValue]="pingMs()"
+            [startOnBoot]="startOnBoot()"
+            [minimizeToTrayOnClose]="minimizeToTrayOnClose()"
+            [retentionDays]="retentionDays()"
+            (pingValueChange)="updatePingMs($event)"
+            (startOnBootChange)="updateStartOnBoot($event)"
+            (minimizeToTrayOnCloseChange)="updateMinimizeToTrayOnClose($event)"
+            (retentionDaysChange)="updateRetentionDays($event)"
+          />
         }
       }
     </main>
