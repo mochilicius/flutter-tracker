@@ -6,28 +6,28 @@
     "githubdesktop.exe": "coding"
   },
   "totals_seconds": {
-    "coding": 3949.244420528412,
-    "researching": 976.5914349555969,
+    "coding": 4682.716975450516,
+    "researching": 1293.845633506775,
     "music": 16.007612228393555
   },
   "app_totals_seconds": {
-    "code.exe": 3775.15283370018,
-    "zen.exe": 976.5914349555969,
-    "githubdesktop.exe": 174.0915868282318,
+    "code.exe": 4371.514714002609,
+    "zen.exe": 1293.845633506775,
+    "githubdesktop.exe": 311.2022614479065,
     "spotify.exe": 16.007612228393555
   },
   "daily_totals_seconds": {
     "2026-03-05": {
-      "coding": 3949.244420528412,
-      "researching": 976.5914349555969,
+      "coding": 4682.716975450516,
+      "researching": 1293.845633506775,
       "music": 16.007612228393555
     }
   },
   "daily_app_totals_seconds": {
     "2026-03-05": {
-      "code.exe": 3775.15283370018,
-      "zen.exe": 976.5914349555969,
-      "githubdesktop.exe": 174.0915868282318,
+      "code.exe": 4371.514714002609,
+      "zen.exe": 1293.845633506775,
+      "githubdesktop.exe": 311.2022614479065,
       "spotify.exe": 16.007612228393555
     }
   },
