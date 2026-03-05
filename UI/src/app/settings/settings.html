@@ -1,0 +1,47 @@
+<section class="settings-card">
+  <header class="settings-header">
+    <h1>Settings</h1>
+    <p-button
+      icon="pi pi-refresh"
+      severity="secondary"
+      [text]="true"
+      ariaLabel="Apply settings"
+      rounded="true"
+      (onClick)="applySettings()"
+    ></p-button>
+  </header>
+
+  @if (statusMessage()) {
+    <div class="settings-toast" role="status" aria-live="polite">
+      <span>{{ statusMessage() }}</span>
+      <button type="button" class="settings-toast-close" aria-label="Close message" (click)="dismissMessage()">
+        <i class="pi pi-times" aria-hidden="true"></i>
+      </button>
+    </div>
+  }
+
+  <hr class="divider" />
+
+  <div class="settings-field">
+    <h3>Ping interval (ms)</h3>
+    <p class="field-help">
+      How often the tracker checks for updates. Increase this value if the app feels laggy on your machine.
+    </p>
+    <p-inputNumber
+      inputId="pingTime"
+      [ngModel]="pingValue"
+      (ngModelChange)="onPingChange($event)"
+      [showButtons]="true"
+      mode="decimal"
+      [min]="500"
+      [step]="500">
+    </p-inputNumber>
+
+  </div>
+</section>
+
+<section class="placeholder">
+  <i class="pi pi-cog placeholder-icon" aria-hidden="true"></i>
+  <h2>More settings coming soon</h2>
+  <p>Additional controls will appear here in a future update.</p>
+</section>

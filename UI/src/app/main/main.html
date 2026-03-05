@@ -1,0 +1,138 @@
+<div class="page-header">
+  <h1>Time Tracker</h1>
+  @if (activeProcess()) {
+    <p-tag [value]="activeProcess()" icon="pi pi-circle-fill"
+      [style]="{'background':'rgba(237,187,180,0.12)','color':'#EDBBB4','border':'1px solid rgba(237,187,180,0.3)','border-radius':'999px','font-size':'12px'}" />
+  }
+</div>
+<hr class="divider" />
+<div class="section-header">
+  <h2>Categories</h2>
+  <p-button icon="pi pi-plus" [rounded]="true" [text]="true" size="small" (onClick)="showAddCategory.set(true)" />
+</div>
+
+@if (showAddCategory()) {
+  <div class="add-form">
+    <p-floatlabel variant="on">
+      <input pInputText id="new-category" class="add-input" [(ngModel)]="newCategoryName"
+        autocomplete="off" (keyup.enter)="addCategory()" />
+      <label for="new-category">Category name</label>
+    </p-floatlabel>
+    <p-button label="Add" size="small" (onClick)="addCategory()" />
+    <p-button icon="pi pi-times" size="small" [text]="true" severity="secondary"
+      (onClick)="showAddCategory.set(false)" />
+  </div>
+}
+
+<div class="category-grid">
+  @for (cat of categories(); track cat.name) {
+    <div class="category-card">
+      <div class="card-header">
+        @if (editingCategory() === cat.name) {
+          <p-floatlabel variant="on" class="edit-name-floatlabel">
+            <input pInputText id="edit-cat-name" class="edit-name-input"
+              [(ngModel)]="editCategoryName"
+              autocomplete="off"
+              (keyup.enter)="saveEditCategory(cat.name)"
+              (keyup.escape)="editingCategory.set(null)"
+              autofocus />
+            <label for="edit-cat-name">Category name</label>
+          </p-floatlabel>
+          <p-button icon="pi pi-check" size="small" [text]="true" severity="success"
+            (onClick)="saveEditCategory(cat.name)" />
+          <p-button icon="pi pi-times" size="small" [text]="true" severity="secondary"
+            (onClick)="editingCategory.set(null)" />
+        } @else {
+          <span class="card-name">{{ cat.name }}</span>
+          @if (getCatTime(cat.name)) {
+            <span class="card-time">{{ getCatTime(cat.name) }}</span>
+          }
+          <p-button icon="pi pi-pencil" [text]="true" size="small" severity="secondary"
+            (onClick)="editCategory(cat.name)" />
+          <p-button icon="pi pi-trash" [text]="true" size="small" severity="danger"
+            (onClick)="deleteCategory(cat.name)" />
+          <p-button icon="pi pi-plus" [text]="true" size="small"
+            (onClick)="openAddApp(cat.name)" />
+        }
+      </div>
+      <div class="app-list">
+        @for (app of cat.apps; track app) {
+          <span class="app-tag">
+            <span class="app-tag__label">{{ app }}</span>
+            @if (getAppTime(app)) {
+              <span class="app-tag__time">{{ getAppTime(app) }}</span>
+            }
+            <button class="app-tag__remove" type="button"
+              aria-label="Remove" (click)="removeApp(cat.name, app)">
+              <i class="pi pi-times"></i>
+            </button>
+          </span>
+        }
+        @empty {
+          <span class="app-empty">No apps yet</span>
+        }
+      </div>
+      @if (showAddApp() === cat.name) {
+        <div class="add-app-form">
+          <p-floatlabel variant="on" class="add-app-autocomplete">
+            <p-autocomplete
+              inputId="add-app-input"
+              [(ngModel)]="selectedProcess"
+              [suggestions]="filteredProcesses()"
+              (completeMethod)="filterProcesses($event)"
+              optionLabel="name"
+              [forceSelection]="false"
+            />
+            <label for="add-app-input">Search process</label>
+          </p-floatlabel>
+          <p-button label="Add" size="small" (onClick)="addAppToCategory(cat.name)" />
+          <p-button icon="pi pi-times" size="small" [text]="true" severity="secondary"
+            (onClick)="showAddApp.set(null)" />
+        </div>
+      }
+    </div>
+  }
+</div>
+
+<hr class="divider" />
+
+<div class="section-header">
+  <h2>Today</h2>
+</div>
+
+<div class="donut-section">
+  <div class="donut-chart">
+    <svg viewBox="0 0 100 100">
+      @for (seg of donutSegments(); track seg.category) {
+        <circle
+          cx="50" cy="50" r="45"
+          fill="none"
+          [attr.stroke]="seg.color"
+          stroke-width="8"
+          stroke-linecap="round"
+          [attr.stroke-dasharray]="seg.length + ' ' + (282.74 - seg.length)"
+          [attr.stroke-dashoffset]="'-' + seg.offset"
+        />
+      }
+      @if (donutSegments().length === 0) {
+        <circle cx="50" cy="50" r="45" fill="none" stroke="var(--border)" stroke-width="8" opacity="0.3" />
+      }
+    </svg>
+    <div class="donut-center">
+      <span class="donut-total">{{ totalTracked() }}</span>
+      <span class="donut-label">tracked</span>
+    </div>
+  </div>
+  <div class="donut-legend">
+    @for (seg of donutSegments(); track seg.category) {
+      <div class="legend-item">
+        <span class="legend-dot" [style.background]="seg.color"></span>
+        <span class="legend-name">{{ seg.category }}</span>
+        <span class="legend-time">{{ formatTime(seg.seconds) }}</span>
+      </div>
+    }
+    @if (donutSegments().length === 0) {
+      <span class="app-empty">No time tracked yet</span>
+    }
+  </div>
+</div>

@@ -1,0 +1,11 @@
+{
+  "name": "activity-tracking-app-root",
+  "private": true,
+  "scripts": {
+    "dev": "npm --prefix UI run dev",
+    "build": "npm --prefix UI run build",
+    "start": "npm --prefix UI run start",
+    "test": "npm --prefix UI run test",
+    "install:ui": "npm --prefix UI install"
+  }
+}

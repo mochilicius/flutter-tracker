@@ -56,7 +56,7 @@ This project is a desktop activity tracking app for Windows. Users define activi
 
 ## Suggested Folder Layout
 
-```text
+np
 activity-tracking-app/
 	UI/                  # Local HTML/CSS/JS UI assets
 	service/             # Python app + tracker + JS bridge

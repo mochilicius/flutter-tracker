@@ -1,0 +1,18 @@
+{
+  "rules": {
+    "code.exe": "coding",
+    "zen.exe": "researching",
+    "spotify.exe": "music",
+    "githubdesktop.exe": "coding"
+  },
+  "totals_seconds": {
+    "coding": 2679.507041454315,
+    "researching": 354.20431089401245,
+    "music": 0.0
+  },
+  "app_totals_seconds": {
+    "code.exe": 2639.488900899887,
+    "zen.exe": 354.20431089401245,
+    "githubdesktop.exe": 40.0181405544281
+  }
+}
