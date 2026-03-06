@@ -6,6 +6,11 @@
     "build": "npm --prefix UI run build",
     "start": "npm --prefix UI run start",
     "test": "npm --prefix UI run test",
-    "install:ui": "npm --prefix UI install"
+    "install:ui": "npm --prefix UI install",
+    "dist": "npm --prefix UI run dist"
+  },
+  "devDependencies": {
+    "electron": "^40.8.0",
+    "electron-builder": "^26.8.1"
   }
 }

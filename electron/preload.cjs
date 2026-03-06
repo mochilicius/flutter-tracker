@@ -7,5 +7,6 @@ contextBridge.exposeInMainWorld("electronAPI", {
 	setMinimizeToTrayOnClose: (enabled) => ipcRenderer.send("settings:minimize-to-tray", Boolean(enabled)),
 	logSettingsApplied: (payload) => ipcRenderer.send("settings:applied", payload),
 	readSettings: () => ipcRenderer.invoke("settings:read"),
-	updateSettings: (payload) => ipcRenderer.invoke("settings:update", payload)
+	updateSettings: (payload) => ipcRenderer.invoke("settings:update", payload),
+	onAppQuitting: (callback) => ipcRenderer.on("app:quitting", callback)
 });

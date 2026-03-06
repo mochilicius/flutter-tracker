@@ -54,4 +54,10 @@
       }
     </main>
   </div>
+
+  @if (isQuitting()) {
+    <div class="quitting-overlay">
+      <div class="quitting-message">Quitting...</div>
+    </div>
+  }
 </div>

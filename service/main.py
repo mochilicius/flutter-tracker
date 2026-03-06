@@ -264,6 +264,16 @@ class Tracker:
         after = len(self._daily_totals_seconds)
         return max(0, before - after)
 
+    def clear_all_data(self) -> None:
+        """Clear all tracked activity data."""
+        self._totals_seconds = {}
+        self._app_totals_seconds = {}
+        self._daily_totals_seconds = {}
+        self._daily_app_totals_seconds = {}
+        self._rules = {}
+        self._category_colors = {}
+        self._retention_days = 30
+
     def _normalize_retention_days(self, days: int) -> int:
         try:
             parsed = int(days)
@@ -422,6 +432,14 @@ def import_state(body: ImportStateBody):
     return {"ok": True}
 
 
+@app.post("/settings/clear-data")
+def clear_data():
+    tracker.clear_all_data()
+    tracker.save(DATA_FILE)
+    print("[settings] cleared all tracked activity data")
+    return {"ok": True}
+
+
 @app.get("/category-colors")
 def get_category_colors():
     return tracker.get_category_colors()
@@ -436,4 +454,4 @@ def set_category_color(body: CategoryColorBody):
 
 
 if __name__ == "__main__":
-    uvicorn.run(app, host="127.0.0.1", port=8000)
+    uvicorn.run(app, host="127.0.0.1", port=8000, log_config=None)

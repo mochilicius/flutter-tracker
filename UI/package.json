@@ -12,7 +12,13 @@
     "start:wait": "wait-on http-get://127.0.0.1:4317 http-get://127.0.0.1:8000/health",
     "start:electron": "electron .",
     "start:desktop": "npm run start:wait && npm run start:electron",
-    "dev": "concurrently -k \"npm run start:ui\" \"npm run start:python\" \"npm run start:desktop\""
+    "dev": "concurrently -k \"npm run start:ui\" \"npm run start:python\" \"npm run start:electron\"",
+    "dist": "node -e \"require('fs').rmSync('dist/ui',{recursive:true,force:true})\" && npm run build && electron-builder",
+    "dist:backend": "node -e \"require('child_process').execSync('taskkill /F /IM ActivityTracker.exe /T',{stdio:'ignore'})\" ; pipenv run pyinstaller --noconfirm --windowed --clean --name ActivityTracker ..\\service\\main.py",
+    "dist:electron": "npm run build && electron-builder",
+    "dist:electron:dir": "npm run build && electron-builder --dir",
+    "dist:electron:clean": "node -e \"require('fs').rmSync('dist/ui',{recursive:true,force:true})\" && npm run dist:electron",
+    "dist:electron:dir:clean": "node -e \"require('fs').rmSync('dist/ui',{recursive:true,force:true})\" && npm run dist:electron:dir"
   },
   "private": true,
   "packageManager": "npm@11.11.0",
@@ -48,5 +54,57 @@
     "vitest": "^4.0.8",
     "wait-on": "^9.0.4"
   },
-  "main": "../electron/main.cjs"
+  "main": "../electron/main.cjs",
+  "build": {
+    "appId": "com.flutter.app",
+    "productName": "Flutter",
+    "asar": false,
+    "extraMetadata": {
+      "main": "main.cjs"
+    },
+    "directories": {
+      "buildResources": "../assets"
+    },
+    "extraResources": [
+      {
+        "from": "../assets/icon.ico",
+        "to": "icon.ico"
+      },
+      {
+        "from": "../dist/ActivityTracker",
+        "to": "backend"
+      }
+    ],
+    "files": [
+      "dist/ui/**/*",
+      {
+        "from": "../electron",
+        "to": ".",
+        "filter": ["**/*"]
+      },
+      {
+        "from": "../data",
+        "to": "data",
+        "filter": ["**/*"]
+      },
+      {
+        "from": "../service",
+        "to": "service",
+        "filter": ["**/*"]
+      },
+      "package.json"
+    ],
+    "win": {
+      "icon": "../assets/icon.ico",
+      "target": [
+        "nsis"
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true
+    }
+  }
 }

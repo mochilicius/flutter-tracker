@@ -80,6 +80,10 @@ export class TrackerService {
     return this.http.post<{ ok: boolean }>(`${API}/settings/import-state`, { state });
   }
 
+  clearData(): Observable<{ ok: boolean }> {
+    return this.http.post<{ ok: boolean }>(`${API}/settings/clear-data`, {});
+  }
+
   getCategoryColors(): Observable<Record<string, string>> {
     return this.http.get<Record<string, string>>(`${API}/category-colors`);
   }

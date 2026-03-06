@@ -114,6 +114,22 @@
       />
     </div>
   </div>
+
+  <div class="settings-field">
+    <h3>Danger zone</h3>
+    <p class="field-help">
+      Permanently delete all tracked activity data.
+    </p>
+    <div class="settings-actions">
+      <p-button
+        label="Clear all data"
+        icon="pi pi-trash"
+        size="small"
+        severity="danger"
+        (onClick)="clearData()"
+      ></p-button>
+    </div>
+  </div>
 </section>
 
 <section class="placeholder">

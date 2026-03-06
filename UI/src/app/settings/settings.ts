@@ -183,4 +183,27 @@ export class SettingsComponent {
     }
     this.statusMessage.set(null);
   }
+
+  clearData(): void {
+    const confirmed = confirm('Are you sure? This will permanently delete all tracked activity data. This action cannot be undone.');
+    if (!confirmed) {
+      return;
+    }
+
+    this.tracker.clearData().subscribe({
+      next: () => {
+        this.statusMessage.set('All data cleared. Refreshing...');
+        this.queueAutoDismiss();
+        setTimeout(() => {
+          if (typeof window !== 'undefined') {
+            window.location.reload();
+          }
+        }, 500);
+      },
+      error: () => {
+        this.statusMessage.set('Failed to clear data.');
+        this.queueAutoDismiss();
+      }
+    });
+  }
 }

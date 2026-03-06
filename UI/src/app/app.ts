@@ -1,4 +1,5 @@
 import { Component, signal } from '@angular/core';
+import { NgIf } from '@angular/common';
 import { MainComponent } from './main/main';
 import { StatsComponent } from './stats/stats';
 import { SettingsComponent } from './settings/settings';
@@ -6,7 +7,7 @@ import { TrackerService } from './tracker.service';
 
 @Component({
   selector: 'app-root',
-  imports: [MainComponent, StatsComponent, SettingsComponent],
+  imports: [NgIf, MainComponent, StatsComponent, SettingsComponent],
   templateUrl: './app.html',
   styleUrl: './app.scss'
 })
@@ -23,9 +24,20 @@ export class App {
   startOnBoot = signal<boolean>(this.readStoredBoolean(this.startOnBootStorageKey, false));
   minimizeToTrayOnClose = signal<boolean>(this.readStoredBoolean(this.minimizeToTrayStorageKey, false));
   retentionDays = signal<number>(this.readStoredRetentionDays());
+  isQuitting = signal<boolean>(false);
 
   constructor(private tracker: TrackerService) {
     this.loadPersistedSettings();
+    this.setupQuittingListener();
+  }
+
+  private setupQuittingListener(): void {
+    const electronAPI = (window as any).electronAPI;
+    if (electronAPI?.onAppQuitting) {
+      electronAPI.onAppQuitting(() => {
+        this.isQuitting.set(true);
+      });
+    }
   }
 
   updatePingMs(value: number): void {

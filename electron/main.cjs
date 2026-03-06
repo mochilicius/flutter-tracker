@@ -1,173 +1,255 @@
 const { app, BrowserWindow, Menu, Tray, nativeImage, ipcMain } = require("electron");
 const path = require("path");
 const fs = require("fs");
+const http = require("http");
+const url = require("url");
+const { spawn } = require("child_process");
 
-const UI_URL = "http://127.0.0.1:4317";
-const SETTINGS_FILE = path.join(__dirname, "..", "data", "ui_settings.json");
+// ── Logging ───────────────────────────────────────────────────────────────────
+const LOG_FILE = path.join(app.getPath("userData"), "debug.log");
+fs.mkdirSync(path.dirname(LOG_FILE), { recursive: true });
+const logStream = fs.createWriteStream(LOG_FILE, { flags: "a" });
+function log(...args) {
+  const line = `[${new Date().toISOString()}] ${args.join(" ")}`;
+  console.log(line);
+  logStream.write(line + "\n");
+}
+log("=== app start ===");
+log("userData:", app.getPath("userData"));
 
+// ── Paths ─────────────────────────────────────────────────────────────────────
+const isDev = !app.isPackaged;
+const DEV_URL = "http://127.0.0.1:4317";
+const UI_FILE = path.join(__dirname, "dist", "ui", "browser", "index.html");
+const SETTINGS_FILE = path.join(__dirname, isDev ? ".." : "", "data", "ui_settings.json");
+const ICON_PATH = isDev
+  ? path.join(__dirname, "..", "assets", "icon.ico")
+  : path.join(process.resourcesPath, "icon.ico");
+
+log("isDev:", isDev, "__dirname:", __dirname);
+log("UI_FILE:", UI_FILE);
+log("ICON_PATH:", ICON_PATH);
+
+// ── Settings ──────────────────────────────────────────────────────────────────
 function readPersistedSettings() {
   try {
-    if (!fs.existsSync(SETTINGS_FILE)) {
-      return {};
-    }
+    if (!fs.existsSync(SETTINGS_FILE)) return {};
     const raw = fs.readFileSync(SETTINGS_FILE, "utf8");
     const parsed = JSON.parse(raw);
-    if (!parsed || typeof parsed !== "object") {
-      return {};
-    }
-    return parsed;
-  } catch (error) {
-    console.error("[settings] failed to read ui_settings.json", error);
+    return parsed && typeof parsed === "object" ? parsed : {};
+  } catch (e) {
+    log("[settings] read error:", e.message);
     return {};
   }
 }
 
 function writePersistedSettings(partial) {
   try {
-    const current = readPersistedSettings();
-    const next = { ...current, ...partial };
+    const next = { ...readPersistedSettings(), ...partial };
     fs.mkdirSync(path.dirname(SETTINGS_FILE), { recursive: true });
     fs.writeFileSync(SETTINGS_FILE, `${JSON.stringify(next, null, 2)}\n`, "utf8");
-  } catch (error) {
-    console.error("[settings] failed to write ui_settings.json", error);
+  } catch (e) {
+    log("[settings] write error:", e.message);
   }
 }
 
+// ── State ─────────────────────────────────────────────────────────────────────
 let mainWindow = null;
 let appTray = null;
 let isQuitting = false;
 let minimizeToTrayOnClose = false;
+let backendProcess = null;
 
-const FEATHER_TRAY_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="#ece5f0" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 4c-4 0-8 2-10.5 5.4c-2.1 2.7-3.2 5.9-3.2 9.3v1.3h1.3c3.4 0 6.6-1.1 9.3-3.2C20 14.3 22 10 22 6V4z"/><path d="M6.3 19.9l8.2-8.2"/></svg>`;
-const FEATHER_TRAY_ICON_DATA_URL = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(FEATHER_TRAY_SVG)}`;
-
-function showMainWindow() {
-  if (!mainWindow) {
+// ── Backend ───────────────────────────────────────────────────────────────────
+function startBackend() {
+  const exePath = path.join(process.resourcesPath, "backend", "ActivityTracker.exe");
+  log("[backend] looking for exe:", exePath);
+  if (!fs.existsSync(exePath)) {
+    log("[backend] exe not found — skipping");
     return;
   }
-  if (mainWindow.isMinimized()) {
-    mainWindow.restore();
+  backendProcess = spawn(exePath, [], { detached: false, stdio: ["ignore", "pipe", "pipe"] });
+  backendProcess.stdout.on("data", (d) => log("[backend:out]", d.toString().trim()));
+  backendProcess.stderr.on("data", (d) => log("[backend:err]", d.toString().trim()));
+  backendProcess.on("error", (e) => log("[backend] spawn error:", e.message));
+  backendProcess.on("exit", (code) => log("[backend] exit:", code));
+  log("[backend] started pid:", backendProcess.pid);
+}
+
+// ── Icons ─────────────────────────────────────────────────────────────────────
+function createTrayIcon() {
+  try {
+    if (fs.existsSync(ICON_PATH)) {
+      return nativeImage.createFromPath(ICON_PATH).resize({ width: 16, height: 16 });
+    }
+    log("[tray] icon not found:", ICON_PATH);
+  } catch (e) {
+    log("[tray] icon error:", e.message);
   }
+  return null;
+}
+
+function createAppIcon() {
+  try {
+    if (fs.existsSync(ICON_PATH)) return nativeImage.createFromPath(ICON_PATH);
+  } catch (e) {
+    log("[app] icon error:", e.message);
+  }
+  return null;
+}
+
+// ── HTTP poll ─────────────────────────────────────────────────────────────────
+function pollUrl(targetUrl, timeoutMs = 60000, intervalMs = 600) {
+  return new Promise((resolve, reject) => {
+    const deadline = Date.now() + timeoutMs;
+    function attempt() {
+      const req = http.get(targetUrl, (res) => { res.resume(); resolve(); });
+      req.setTimeout(1500);
+      req.on("timeout", () => req.destroy());
+      req.on("error", () => {
+        if (Date.now() < deadline) setTimeout(attempt, intervalMs);
+        else reject(new Error(`Timeout waiting for ${targetUrl}`));
+      });
+    }
+    attempt();
+  });
+}
+
+// ── Window ────────────────────────────────────────────────────────────────────
+function showMainWindow() {
+  if (!mainWindow) return;
   mainWindow.setSkipTaskbar(false);
+  if (mainWindow.isMinimized()) mainWindow.restore();
   mainWindow.show();
   mainWindow.focus();
 }
 
-function createWindow() {
+async function createWindow() {
+  log("[window] creating BrowserWindow");
   const win = new BrowserWindow({
     width: 1200,
     height: 800,
     minWidth: 900,
     minHeight: 620,
     frame: false,
+    show: true,
     titleBarStyle: "hidden",
     backgroundColor: "#2C2A4A",
+    icon: createAppIcon(),
     webPreferences: {
-      preload: path.join(__dirname, "preload.cjs")
-    }
+      preload: path.join(__dirname, "preload.cjs"),
+    },
   });
-  win.loadURL(UI_URL);
-
-  win.on("close", (event) => {
-    if (minimizeToTrayOnClose && !isQuitting) {
-      event.preventDefault();
-      if (ensureTray()) {
-        win.setSkipTaskbar(true);
-        win.hide();
-      } else {
-        win.minimize();
-      }
-    }
-  });
-
   mainWindow = win;
+
+  win.webContents.on("did-fail-load", (_e, code, desc, failedUrl) => {
+    log("[window] did-fail-load:", code, desc, failedUrl);
+  });
+
+  // Open DevTools for live renderer + main-process console output (dev only)
+  if (isDev) win.webContents.openDevTools({ mode: "detach" });
+
+  const loadingUrl = url.format({ pathname: path.join(__dirname, "loading.html"), protocol: "file:", slashes: true });
+  log("[window] loading screen:", loadingUrl);
+  win.loadURL(loadingUrl);
+
+  try {
+    if (isDev) {
+      log("[startup] polling dev server + backend...");
+      await Promise.all([pollUrl(DEV_URL), pollUrl("http://127.0.0.1:8000/health")]);
+      log("[startup] ready — loading dev URL");
+      win.loadURL(DEV_URL);
+    } else {
+      const backendExe = path.join(process.resourcesPath, "backend", "ActivityTracker.exe");
+      if (fs.existsSync(backendExe)) {
+        log("[startup] polling backend health...");
+        await pollUrl("http://127.0.0.1:8000/health");
+        log("[startup] backend ready");
+      } else {
+        log("[startup] no backend exe — loading UI directly");
+      }
+      const uiUrl = url.format({ pathname: UI_FILE, protocol: "file:", slashes: true });
+      log("[startup] loading UI:", uiUrl);
+      win.loadURL(uiUrl);
+    }
+  } catch (e) {
+    log("[startup] error:", e.message, "— loading UI anyway");
+    if (isDev) win.loadURL(DEV_URL);
+    else win.loadURL(url.format({ pathname: UI_FILE, protocol: "file:", slashes: true }));
+  }
+
+  win.on("close", () => log("[window] close, isQuitting:", isQuitting));
 }
 
+// ── Tray ──────────────────────────────────────────────────────────────────────
 function ensureTray() {
-  if (appTray) {
-    return true;
-  }
-  if (!app.isReady()) {
-    return false;
-  }
-  let icon = nativeImage.createFromDataURL(FEATHER_TRAY_ICON_DATA_URL);
-  icon = icon.resize({ width: 16, height: 16 });
-  if (icon.isEmpty()) {
-    console.error("[tray] feather icon generation failed");
-    return false;
-  }
+  if (appTray) return true;
+  if (!app.isReady()) { log("[tray] not ready"); return false; }
+  const icon = createTrayIcon();
+  if (!icon) { log("[tray] no icon"); return false; }
   try {
     appTray = new Tray(icon);
-  } catch (error) {
-    console.error("[tray] failed to create tray icon", error);
+  } catch (e) {
+    log("[tray] create error:", e.message);
     return false;
   }
-  appTray.setToolTip("Time Tracker");
+  appTray.setToolTip("Flutter");
   appTray.setContextMenu(Menu.buildFromTemplate([
-    {
-      label: "Show",
-      click: () => showMainWindow()
-    },
-    {
-      label: "Quit",
-      click: () => {
-        isQuitting = true;
-        app.quit();
-      }
-    }
+    { label: "Show", click: () => showMainWindow() },
+    { label: "Quit", click: () => { isQuitting = true; app.quit(); } },
   ]));
   appTray.on("double-click", () => showMainWindow());
+  log("[tray] created");
   return true;
 }
 
-app.whenReady().then(createWindow);
-
-ipcMain.on("window:minimize", (event) => {
-  const win = BrowserWindow.fromWebContents(event.sender);
-  if (win) {
-    win.minimize();
-  }
+// ── App lifecycle ─────────────────────────────────────────────────────────────
+app.whenReady().then(() => {
+  log("[app] ready — isDev:", isDev);
+  if (!isDev) startBackend();
+  createWindow();
 });
+
+app.on("before-quit", () => {
+  isQuitting = true;
+  log("[app] before-quit");
+  if (backendProcess) { backendProcess.kill(); backendProcess = null; }
+});
+
+app.on("window-all-closed", () => {
+  if (process.platform !== "darwin") app.quit();
+});
+
+// ── IPC ───────────────────────────────────────────────────────────────────────
+ipcMain.on("window:minimize", (event) => BrowserWindow.fromWebContents(event.sender)?.minimize());
 
 ipcMain.on("window:close", (event) => {
   const win = BrowserWindow.fromWebContents(event.sender);
-  if (win) {
-    if (minimizeToTrayOnClose) {
-      if (ensureTray()) {
-        win.setSkipTaskbar(true);
-        win.hide();
-      } else {
-        win.minimize();
-      }
-      return;
-    }
-    isQuitting = true;
-    win.close();
-  }
-});
-
-ipcMain.on("settings:start-on-boot", (_event, enabled) => {
-  app.setLoginItemSettings({
-    openAtLogin: Boolean(enabled),
-  });
-  writePersistedSettings({ startOnBoot: Boolean(enabled) });
-  console.log(`[settings] startOnBoot=${Boolean(enabled)}`);
-});
-
-ipcMain.on("settings:minimize-to-tray", (_event, enabled) => {
-  minimizeToTrayOnClose = Boolean(enabled);
+  log("[ipc:close] minimizeToTray:", minimizeToTrayOnClose);
+  if (!win) return;
   if (minimizeToTrayOnClose) {
-    ensureTray();
+    if (ensureTray()) { win.minimize(); win.setSkipTaskbar(true); win.hide(); }
+    else win.minimize();
+    return;
   }
-  writePersistedSettings({ minimizeToTrayOnClose });
-  console.log(`[settings] minimizeToTrayOnClose=${minimizeToTrayOnClose}`);
+  win.webContents.send("app:quitting");
+  isQuitting = true;
+  setTimeout(() => win.close(), 800);
 });
 
-ipcMain.on("settings:applied", (_event, payload) => {
-  if (payload && typeof payload === "object") {
-    writePersistedSettings(payload);
-  }
-  console.log("[settings] applied", payload);
+ipcMain.on("settings:start-on-boot", (_e, enabled) => {
+  app.setLoginItemSettings({ openAtLogin: Boolean(enabled) });
+  writePersistedSettings({ startOnBoot: Boolean(enabled) });
+});
+
+ipcMain.on("settings:minimize-to-tray", (_e, enabled) => {
+  minimizeToTrayOnClose = Boolean(enabled);
+  if (minimizeToTrayOnClose) ensureTray();
+  writePersistedSettings({ minimizeToTrayOnClose });
+});
+
+ipcMain.on("settings:applied", (_e, payload) => {
+  if (payload && typeof payload === "object") writePersistedSettings(payload);
 });
 
 ipcMain.handle("settings:read", () => {
@@ -176,7 +258,7 @@ ipcMain.handle("settings:read", () => {
   return settings;
 });
 
-ipcMain.handle("settings:update", (_event, payload) => {
+ipcMain.handle("settings:update", (_e, payload) => {
   if (payload && typeof payload === "object") {
     writePersistedSettings(payload);
     if (Object.prototype.hasOwnProperty.call(payload, "minimizeToTrayOnClose")) {
@@ -185,9 +267,3 @@ ipcMain.handle("settings:update", (_event, payload) => {
   }
   return { ok: true };
 });
-
-app.on("before-quit", () => {
-  isQuitting = true;
-});
-
-app.on("window-all-closed", () => { if (process.platform !== "darwin") app.quit(); });

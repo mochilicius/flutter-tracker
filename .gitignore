@@ -1,0 +1,51 @@
+# ── Build outputs ─────────────────────────────────────────────────────────────
+dist/
+build/
+UI/dist/
+UI/.angular/
+
+# ── Node ──────────────────────────────────────────────────────────────────────
+node_modules/
+UI/node_modules/
+npm-debug.log*
+yarn-error.log*
+
+# ── Python ────────────────────────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*.pyo
+.venv/
+*.egg-info/
+.eggs/
+Pipfile.lock
+
+# ── PyInstaller ───────────────────────────────────────────────────────────────
+*.spec.bak
+warn-*.txt
+xref-*.html
+
+# ── Data / state (user-specific, not source) ──────────────────────────────────
+data/tracker_state.json
+data/ui_settings.json
+
+# ── Logs ──────────────────────────────────────────────────────────────────────
+*.log
+debug.log
+
+# ── IDEs ──────────────────────────────────────────────────────────────────────
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+!.vscode/mcp.json
+.idea/
+*.sublime-workspace
+
+# ── OS ────────────────────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ── Electron builder cache ────────────────────────────────────────────────────
+UI/dist/
