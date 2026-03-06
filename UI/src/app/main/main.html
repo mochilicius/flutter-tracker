@@ -26,7 +26,9 @@
 
 <div class="category-grid">
   @for (cat of categories(); track cat.name) {
-    <div class="category-card" [style.border-color]="getCategoryColor(cat.name)">
+    <div class="category-card" 
+      [style.border-color]="getCategoryColor(cat.name)"
+      [style.--accent-color]="getCategoryColor(cat.name)">
       <div class="card-header">
         @if (editingCategory() === cat.name) {
           <p-floatlabel variant="on" class="edit-name-floatlabel">
