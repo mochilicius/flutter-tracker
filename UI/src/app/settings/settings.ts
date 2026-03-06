@@ -166,6 +166,34 @@ export class SettingsComponent {
       });
   }
 
+  exportCache(): void {
+    this.tracker.exportState().subscribe({
+      next: (state) => {
+        const now = new Date();
+        const stamp = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+        const fileName = `tracker_state_export_${stamp}.json`;
+        const content = JSON.stringify(state, null, 2);
+        const blob = new Blob([content], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = fileName;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+
+        this.statusMessage.set('Cache exported as JSON.');
+        this.queueAutoDismiss();
+      },
+      error: () => {
+        this.statusMessage.set('Failed to export cache.');
+        this.queueAutoDismiss();
+      }
+    });
+  }
+
   private queueAutoDismiss(): void {
     if (this.toastTimer) {
       clearTimeout(this.toastTimer);

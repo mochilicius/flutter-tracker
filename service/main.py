@@ -112,17 +112,20 @@ class Tracker:
     def save(self, path: Path) -> None:
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(
-            json.dumps({
-                "rules": self._rules,
-                "totals_seconds": self._totals_seconds,
-                "app_totals_seconds": self._app_totals_seconds,
-                "daily_totals_seconds": self._daily_totals_seconds,
-                "daily_app_totals_seconds": self._daily_app_totals_seconds,
-                "category_colors": self._category_colors,
-                "retention_days": self._retention_days,
-            }, indent=2),
+            json.dumps(self.export_state(), indent=2),
             encoding="utf-8",
         )
+
+    def export_state(self) -> dict:
+        return {
+            "rules": self._rules,
+            "totals_seconds": self._totals_seconds,
+            "app_totals_seconds": self._app_totals_seconds,
+            "daily_totals_seconds": self._daily_totals_seconds,
+            "daily_app_totals_seconds": self._daily_app_totals_seconds,
+            "category_colors": self._category_colors,
+            "retention_days": self._retention_days,
+        }
 
     # ── Rules ────────────────────────────────────────────────────────────────
 
@@ -438,6 +441,11 @@ def clear_data():
     tracker.save(DATA_FILE)
     print("[settings] cleared all tracked activity data")
     return {"ok": True}
+
+
+@app.get("/settings/export-cache")
+def export_cache():
+    return tracker.export_state()
 
 
 @app.get("/category-colors")

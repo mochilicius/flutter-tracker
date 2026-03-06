@@ -99,13 +99,29 @@
         icon="pi pi-sync"
         size="small"
         severity="secondary"
+        styleClass="settings-action-btn settings-action-btn--import"
         (onClick)="reloadCache()"
       ></p-button>
-      <label class="import-button" for="stateImport">
-        <i class="pi pi-upload" aria-hidden="true"></i>
-        Import state JSON
-      </label>
+
+      <p-button
+        label="Export cache"
+        icon="pi pi-upload"
+        size="small"
+        severity="primary"
+        styleClass="settings-action-btn settings-action-btn--import"
+        (onClick)="exportCache()"
+      ></p-button>
+
+      <p-button
+        label="Import state JSON"
+        icon="pi pi-download"
+        size="small"
+        severity="primary"
+        styleClass="settings-action-btn settings-action-btn--import"
+        (onClick)="stateImport.click()"
+      ></p-button>
       <input
+        #stateImport
         id="stateImport"
         class="state-import-input"
         type="file"
@@ -126,6 +142,7 @@
         icon="pi pi-trash"
         size="small"
         severity="danger"
+        styleClass="settings-action-btn"
         (onClick)="clearData()"
       ></p-button>
     </div>

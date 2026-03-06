@@ -80,6 +80,10 @@ export class TrackerService {
     return this.http.post<{ ok: boolean }>(`${API}/settings/import-state`, { state });
   }
 
+  exportState(): Observable<Record<string, unknown>> {
+    return this.http.get<Record<string, unknown>>(`${API}/settings/export-cache`);
+  }
+
   clearData(): Observable<{ ok: boolean }> {
     return this.http.post<{ ok: boolean }>(`${API}/settings/clear-data`, {});
   }

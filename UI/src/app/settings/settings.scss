@@ -125,9 +125,32 @@
 	flex-wrap: wrap;
 }
 
+:deep(.settings-action-btn.p-button) {
+	min-width: 150px;
+	justify-content: center;
+}
+
+:deep(.settings-action-btn--import.p-button) {
+	height: 30px;
+	border-radius: 8px;
+	border: 1px solid var(--border);
+	background: rgba(255, 255, 255, 0.04);
+	color: var(--text);
+	font-size: 12px;
+	padding: 6px 10px;
+	box-sizing: border-box;
+}
+
+:deep(.settings-action-btn--import.p-button:hover) {
+	border-color: var(--accent);
+	background: rgba(255, 255, 255, 0.04);
+	color: var(--text);
+}
+
 .import-button {
 	display: inline-flex;
 	align-items: center;
+	justify-content: center;
 	gap: 6px;
 	padding: 6px 10px;
 	font-size: 12px;
@@ -136,6 +159,9 @@
 	background: rgba(255, 255, 255, 0.04);
 	color: var(--text);
 	cursor: pointer;
+	min-width: 150px;
+	height: 30px;
+	box-sizing: border-box;
 
 	&:hover {
 		border-color: var(--accent);

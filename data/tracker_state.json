@@ -2,17 +2,19 @@
   "rules": {
     "code.exe": "coding",
     "spotify.exe": "music",
-    "githubdesktop.exe": "coding"
+    "githubdesktop.exe": "coding",
+    "zen.exe": "browsing"
   },
   "totals_seconds": {
-    "coding": 5512.082717895508,
+    "coding": 6016.433824300766,
     "researching": 1293.845633506775,
-    "music": 16.007612228393555
+    "music": 16.007612228393555,
+    "browsing": 24.01878070831299
   },
   "app_totals_seconds": {
-    "code.exe": 5200.880456447601,
-    "zen.exe": 1293.845633506775,
-    "githubdesktop.exe": 311.2022614479065,
+    "code.exe": 5679.217782020569,
+    "zen.exe": 1317.864414215088,
+    "githubdesktop.exe": 337.21604228019714,
     "spotify.exe": 16.007612228393555
   },
   "daily_totals_seconds": {
@@ -22,9 +24,10 @@
       "music": 16.007612228393555
     },
     "2026-03-06": {
-      "coding": 5512.082717895508,
+      "coding": 6016.433824300766,
       "researching": 1293.845633506775,
-      "music": 16.007612228393555
+      "music": 16.007612228393555,
+      "browsing": 24.01878070831299
     }
   },
   "daily_app_totals_seconds": {
@@ -35,12 +38,16 @@
       "spotify.exe": 16.007612228393555
     },
     "2026-03-06": {
-      "code.exe": 5200.880456447601,
-      "zen.exe": 1293.845633506775,
-      "githubdesktop.exe": 311.2022614479065,
+      "code.exe": 5679.217782020569,
+      "zen.exe": 1317.864414215088,
+      "githubdesktop.exe": 337.21604228019714,
       "spotify.exe": 16.007612228393555
     }
   },
-  "category_colors": {},
+  "category_colors": {
+    "browsing": "#7AD6D5",
+    "music": "#CA44AD",
+    "coding": "#917CD5"
+  },
   "retention_days": 30
 }

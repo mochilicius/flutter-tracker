@@ -26,10 +26,10 @@
 
 .category-card {
 	background: linear-gradient(
-		135deg,
+		-145deg,
 		var(--card-bg) 0%,
-		var(--card-bg) 60%,
-		color-mix(in srgb, var(--accent-color, var(--accent)) 8%, var(--card-bg)) 100%
+		var(--card-bg) 15%,
+		color-mix(in srgb, var(--accent-color, var(--accent)) 15%, var(--card-bg)) 100%
 	);
 	border: 1px solid var(--border);
 	border-radius: 14px;
