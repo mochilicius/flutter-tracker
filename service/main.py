@@ -78,6 +78,7 @@ class Tracker:
         self._app_totals_seconds: dict[str, float] = {}
         self._daily_totals_seconds: dict[str, dict[str, float]] = {}
         self._daily_app_totals_seconds: dict[str, dict[str, float]] = {}
+        self._daily_hourly_seconds: dict[str, dict[str, list[float]]] = {}
         self._category_colors: dict[str, str] = {}
         self._retention_days = 30
 
@@ -93,19 +94,13 @@ class Tracker:
             self._app_totals_seconds = data.get("app_totals_seconds", {})
             self._daily_totals_seconds = data.get("daily_totals_seconds", {})
             self._daily_app_totals_seconds = data.get("daily_app_totals_seconds", {})
+            self._daily_hourly_seconds = self._normalize_hourly_map(data.get("daily_hourly_seconds", {}))
             self._category_colors = {
                 str(k): str(v)
                 for k, v in data.get("category_colors", {}).items()
                 if isinstance(k, str) and isinstance(v, str)
             }
             self._retention_days = self._normalize_retention_days(data.get("retention_days", 30))
-
-            # Backward compatibility for existing state files without dated logs.
-            today = date.today().isoformat()
-            if today not in self._daily_totals_seconds and self._totals_seconds:
-                self._daily_totals_seconds[today] = dict(self._totals_seconds)
-            if today not in self._daily_app_totals_seconds and self._app_totals_seconds:
-                self._daily_app_totals_seconds[today] = dict(self._app_totals_seconds)
         except Exception:
             pass
 
@@ -123,6 +118,7 @@ class Tracker:
             "app_totals_seconds": self._app_totals_seconds,
             "daily_totals_seconds": self._daily_totals_seconds,
             "daily_app_totals_seconds": self._daily_app_totals_seconds,
+            "daily_hourly_seconds": self._daily_hourly_seconds,
             "category_colors": self._category_colors,
             "retention_days": self._retention_days,
         }
@@ -195,18 +191,43 @@ class Tracker:
             "active_process": self._state.active_process,
         }
 
+    def get_all_daily_totals(self) -> dict:
+        return {
+            "daily_totals_seconds": {
+                day: {cat: round(secs, 1) for cat, secs in totals.items()}
+                for day, totals in sorted(self._daily_totals_seconds.items())
+            },
+            "daily_app_totals_seconds": {
+                day: {app: round(secs, 1) for app, secs in totals.items()}
+                for day, totals in sorted(self._daily_app_totals_seconds.items())
+            },
+            "daily_hourly_seconds": {
+                day: {
+                    cat: [round(s, 1) for s in hours]
+                    for cat, hours in cats.items()
+                }
+                for day, cats in sorted(self._daily_hourly_seconds.items())
+            },
+            "category_colors": self._category_colors,
+        }
+
     def tick(self, process_name: str, elapsed: float) -> None:
         key = process_name.lower()
         cat = self._rules.get(key)
         if cat:
             today = date.today().isoformat()
+            hour = datetime.now().hour
             day_totals = self._daily_totals_seconds.setdefault(today, {})
             day_app_totals = self._daily_app_totals_seconds.setdefault(today, {})
+            day_hourly = self._daily_hourly_seconds.setdefault(today, {})
 
             self._totals_seconds[cat] = self._totals_seconds.get(cat, 0.0) + elapsed
             self._app_totals_seconds[key] = self._app_totals_seconds.get(key, 0.0) + elapsed
             day_totals[cat] = day_totals.get(cat, 0.0) + elapsed
             day_app_totals[key] = day_app_totals.get(key, 0.0) + elapsed
+            if cat not in day_hourly:
+                day_hourly[cat] = [0.0] * 24
+            day_hourly[cat][hour] += elapsed
 
     def set_retention_days(self, days: int) -> int:
         self._retention_days = self._normalize_retention_days(days)
@@ -225,6 +246,7 @@ class Tracker:
         self._app_totals_seconds = {}
         self._daily_totals_seconds = {}
         self._daily_app_totals_seconds = {}
+        self._daily_hourly_seconds = {}
         self._category_colors = {}
         self._retention_days = 30
         self.load(path)
@@ -242,6 +264,7 @@ class Tracker:
         self._app_totals_seconds = self._normalize_number_map(imported.get("app_totals_seconds", {}))
         self._daily_totals_seconds = self._normalize_nested_number_map(imported.get("daily_totals_seconds", {}))
         self._daily_app_totals_seconds = self._normalize_nested_number_map(imported.get("daily_app_totals_seconds", {}))
+        self._daily_hourly_seconds = self._normalize_hourly_map(imported.get("daily_hourly_seconds", {}))
         self._category_colors = {
             str(k): str(v).upper()
             for k, v in imported.get("category_colors", {}).items()
@@ -264,6 +287,11 @@ class Tracker:
             for day, totals in self._daily_app_totals_seconds.items()
             if self._is_on_or_after_cutoff(day, cutoff)
         }
+        self._daily_hourly_seconds = {
+            day: cats
+            for day, cats in self._daily_hourly_seconds.items()
+            if self._is_on_or_after_cutoff(day, cutoff)
+        }
         after = len(self._daily_totals_seconds)
         return max(0, before - after)
 
@@ -273,9 +301,18 @@ class Tracker:
         self._app_totals_seconds = {}
         self._daily_totals_seconds = {}
         self._daily_app_totals_seconds = {}
+        self._daily_hourly_seconds = {}
         self._rules = {}
         self._category_colors = {}
         self._retention_days = 30
+
+    def clear_time_data(self) -> None:
+        """Clear only tracked time data, preserving rules and category colors."""
+        self._totals_seconds = {}
+        self._app_totals_seconds = {}
+        self._daily_totals_seconds = {}
+        self._daily_app_totals_seconds = {}
+        self._daily_hourly_seconds = {}
 
     def _normalize_retention_days(self, days: int) -> int:
         try:
@@ -312,6 +349,27 @@ class Tracker:
             if not isinstance(day, str):
                 continue
             result[day] = self._normalize_number_map(totals)
+        return result
+
+    def _normalize_hourly_map(self, value: dict) -> dict[str, dict[str, list[float]]]:
+        if not isinstance(value, dict):
+            return {}
+        result: dict[str, dict[str, list[float]]] = {}
+        for day, cats in value.items():
+            if not isinstance(day, str) or not isinstance(cats, dict):
+                continue
+            day_result: dict[str, list[float]] = {}
+            for cat, hours in cats.items():
+                if not isinstance(cat, str) or not isinstance(hours, list):
+                    continue
+                hour_list = [0.0] * 24
+                for i, v in enumerate(hours[:24]):
+                    try:
+                        hour_list[i] = float(v)
+                    except Exception:
+                        pass
+                day_result[cat] = hour_list
+            result[day] = day_result
         return result
 
     def _is_valid_hex_color(self, color: str) -> bool:
@@ -360,6 +418,7 @@ app = FastAPI()
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
+        "null",
         "http://localhost:4200",
         "http://127.0.0.1:4200",
         "http://localhost:4317",
@@ -407,6 +466,11 @@ def get_totals():
     return tracker.get_today_totals()
 
 
+@app.get("/daily-totals")
+def get_daily_totals():
+    return tracker.get_all_daily_totals()
+
+
 @app.post("/settings/retention-days")
 def set_retention_days(body: RetentionBody):
     days = tracker.set_retention_days(body.retention_days)
@@ -440,6 +504,14 @@ def clear_data():
     tracker.clear_all_data()
     tracker.save(DATA_FILE)
     print("[settings] cleared all tracked activity data")
+    return {"ok": True}
+
+
+@app.post("/settings/clear-time-data")
+def clear_time_data():
+    tracker.clear_time_data()
+    tracker.save(DATA_FILE)
+    print("[settings] cleared time data (rules and colors preserved)")
     return {"ok": True}
 
 

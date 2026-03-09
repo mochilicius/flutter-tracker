@@ -26,7 +26,7 @@
 
 <div class="category-grid">
   @for (cat of categories(); track cat.name) {
-    <div class="category-card" 
+    <div class="category-card"
       [style.border-color]="getCategoryColor(cat.name)"
       [style.--accent-color]="getCategoryColor(cat.name)">
       <div class="card-header">
@@ -145,3 +145,38 @@
     }
   </div>
 </div>
+
+@if (pastDays().length > 0) {
+  <hr class="divider" />
+  <div class="section-header">
+    <h2>History</h2>
+  </div>
+  <div class="history-grid">
+    @for (day of pastDays(); track day.date) {
+      <div class="day-card">
+        <div class="day-donut">
+          <svg viewBox="0 0 100 100">
+            @for (seg of day.segments; track seg.category) {
+              <circle
+                cx="50" cy="50" r="45"
+                fill="none"
+                [attr.stroke]="seg.color"
+                stroke-width="9"
+                stroke-linecap="round"
+                [attr.stroke-dasharray]="seg.length + ' ' + (282.74 - seg.length)"
+                [attr.stroke-dashoffset]="'-' + seg.offset"
+              />
+            }
+            @if (day.segments.length === 0) {
+              <circle cx="50" cy="50" r="45" fill="none" stroke="var(--border)" stroke-width="9" opacity="0.3" />
+            }
+          </svg>
+          <div class="donut-center">
+            <span class="day-donut-total">{{ day.total }}</span>
+          </div>
+        </div>
+        <div class="day-label">{{ day.label }}</div>
+      </div>
+    }
+  </div>
+}

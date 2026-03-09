@@ -34,6 +34,13 @@ export interface Totals {
   active_process: string;
 }
 
+export interface AllDailyTotals {
+  daily_totals_seconds: Record<string, Record<string, number>>;
+  daily_app_totals_seconds: Record<string, Record<string, number>>;
+  daily_hourly_seconds: Record<string, Record<string, number[]>>;
+  category_colors: Record<string, string>;
+}
+
 export interface RetentionSettingsBody {
   retention_days: number;
 }
@@ -66,6 +73,10 @@ export class TrackerService {
     return this.http.get<Totals>(`${API}/totals`);
   }
 
+  getDailyTotals(): Observable<AllDailyTotals> {
+    return this.http.get<AllDailyTotals>(`${API}/daily-totals`);
+  }
+
   setRetentionDays(days: number): Observable<{ ok: boolean; retention_days: number }> {
     return this.http.post<{ ok: boolean; retention_days: number }>(`${API}/settings/retention-days`, {
       retention_days: days,
@@ -86,6 +97,10 @@ export class TrackerService {
 
   clearData(): Observable<{ ok: boolean }> {
     return this.http.post<{ ok: boolean }>(`${API}/settings/clear-data`, {});
+  }
+
+  clearTimeData(): Observable<{ ok: boolean }> {
+    return this.http.post<{ ok: boolean }>(`${API}/settings/clear-time-data`, {});
   }
 
   getCategoryColors(): Observable<Record<string, string>> {

@@ -9,6 +9,13 @@ import { Tag } from 'primeng/tag';
 import { TrackerService, Category, DonutSegment, ProcessInfo, Totals } from '../tracker.service';
 import { interval, Subscription } from 'rxjs';
 
+interface DayChart {
+  date: string;
+  label: string;
+  segments: DonutSegment[];
+  total: string;
+}
+
 @Component({
   selector: 'app-main',
   imports: [CommonModule, FormsModule, Button, InputText, AutoComplete, Tag, FloatLabel],
@@ -25,6 +32,7 @@ export class MainComponent implements OnInit, OnChanges, OnDestroy {
   categoryTotals = signal<Record<string, number>>({});
   appTotals = signal<Record<string, number>>({});
   categoryColors = signal<Record<string, string>>({});
+  pastDays = signal<DayChart[]>([]);
   showAddCategory = signal(false);
   newCategoryName = '';
   editingCategory = signal<string | null>(null);
@@ -47,6 +55,7 @@ export class MainComponent implements OnInit, OnChanges, OnDestroy {
     this.loadCategoryColors();
     this.loadRules();
     this.refreshTotals();
+    this.loadHistoryDonuts();
     this.startPolling();
   }
 
@@ -72,6 +81,53 @@ export class MainComponent implements OnInit, OnChanges, OnDestroy {
       this.activeProcess.set(t.active_process);
       this.buildDonut(t);
     });
+  }
+
+  private loadHistoryDonuts(): void {
+    this.tracker.getDailyTotals().subscribe(data => {
+      const today = new Date().toISOString().split('T')[0];
+      const colors = data.category_colors ?? {};
+      this.pastDays.set(
+        Object.entries(data.daily_totals_seconds)
+          .filter(([day]) => day !== today)
+          .sort(([a], [b]) => b.localeCompare(a))
+          .map(([day, totals]) => {
+            const { segments, total } = this.buildSegments(totals, colors);
+            return { date: day, label: this.formatDate(day), segments, total };
+          })
+      );
+    });
+  }
+
+  private buildSegments(
+    totals: Record<string, number>,
+    colors: Record<string, string>
+  ): { segments: DonutSegment[]; total: string } {
+    const entries = Object.entries(totals).filter(([, s]) => s > 0);
+    const totalSecs = entries.reduce((sum, [, s]) => sum + s, 0);
+    if (totalSecs === 0) return { segments: [], total: '0m' };
+    const CIRCUMFERENCE = 2 * Math.PI * 45;
+    const GAP = 4;
+    const usable = CIRCUMFERENCE - entries.length * GAP;
+    let offset = 0;
+    const segments: DonutSegment[] = entries.map(([cat, secs], i) => {
+      const len = (secs / totalSecs) * usable;
+      const seg: DonutSegment = {
+        color: colors[cat] ?? this.DONUT_COLORS[i % this.DONUT_COLORS.length],
+        offset,
+        length: len,
+        category: cat,
+        seconds: secs,
+      };
+      offset += len + GAP;
+      return seg;
+    });
+    return { segments, total: this.formatTime(totalSecs) };
+  }
+
+  formatDate(dateStr: string): string {
+    const d = new Date(dateStr + 'T00:00:00');
+    return d.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
   }
 
   private getSafePollInterval(): number {

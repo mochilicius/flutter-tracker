@@ -134,9 +134,18 @@
   <div class="settings-field">
     <h3>Danger zone</h3>
     <p class="field-help">
-      Permanently delete all tracked activity data.
+      <strong>Clear time data</strong> — deletes all time records but keeps your rules and category colors.<br>
+      <strong>Clear all data</strong> — permanently deletes everything including rules and category colors.
     </p>
     <div class="settings-actions">
+      <p-button
+        label="Clear time data"
+        icon="pi pi-clock"
+        size="small"
+        severity="primary"
+        styleClass="settings-action-btn"
+        (onClick)="clearTimeData()"
+      ></p-button>
       <p-button
         label="Clear all data"
         icon="pi pi-trash"

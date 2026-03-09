@@ -4,28 +4,132 @@
 	display: block;
 }
 
-.placeholder {
-	display: flex;
-	flex-direction: column;
-	align-items: center;
-	justify-content: center;
-	padding: 80px 32px;
-	color: var(--muted);
-	text-align: center;
-
-	h2 {
-		margin: 12px 0 4px;
-		font-size: 20px;
-		color: var(--text);
-	}
-
-	p {
-		margin: 0;
-		font-size: 13px;
-	}
+/* ── Page header ── */
+.page-header h1 {
+	margin: 0;
+	font-size: 26px;
+	font-weight: 700;
+	letter-spacing: -0.01em;
 }
 
-.placeholder-icon {
-	font-size: 48px;
-	opacity: 0.4;
+/* ── 24h bar chart ── */
+.chart-card {
+	background: var(--card-bg);
+	border: 1px solid var(--border);
+	border-radius: 14px;
+	padding: 20px 24px 16px;
+	overflow: hidden;
+}
+
+.hour-chart {
+	display: block;
+	width: 100%;
+	height: auto;
+	min-height: 68px;
+	overflow: visible;
+}
+
+.hour-tick {
+	font-size: 7px;
+	fill: var(--muted);
+	font-family: "Segoe UI", Tahoma, sans-serif;
+}
+
+.chart-empty {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	padding: 32px 0;
+}
+
+/* ── App breakdown ── */
+.breakdown-list {
+	display: flex;
+	flex-direction: column;
+	gap: 16px;
+}
+
+.cat-section {
+	background: var(--card-bg);
+	border: 1px solid var(--border);
+	border-radius: 12px;
+	padding: 14px 16px;
+}
+
+.cat-header {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	margin-bottom: 12px;
+}
+
+.cat-dot {
+	width: 10px;
+	height: 10px;
+	border-radius: 50%;
+	flex-shrink: 0;
+}
+
+.cat-name {
+	flex: 1;
+	font-size: 14px;
+	font-weight: 600;
+}
+
+.cat-total {
+	font-size: 13px;
+	color: var(--muted);
+	font-variant-numeric: tabular-nums;
+}
+
+.cat-apps {
+	display: flex;
+	flex-direction: column;
+	gap: 7px;
+}
+
+.app-row {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+}
+
+.app-exe {
+	font-size: 12px;
+	color: var(--muted);
+	width: 130px;
+	flex-shrink: 0;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.app-bar-wrap {
+	flex: 1;
+	height: 6px;
+	background: rgba(255, 255, 255, 0.06);
+	border-radius: 999px;
+	overflow: hidden;
+}
+
+.app-bar {
+	height: 100%;
+	border-radius: 999px;
+	opacity: 0.75;
+	transition: width 0.4s ease;
+}
+
+.app-time {
+	font-size: 12px;
+	color: var(--muted);
+	font-variant-numeric: tabular-nums;
+	width: 56px;
+	text-align: right;
+	flex-shrink: 0;
+}
+
+.app-empty {
+	font-size: 12px;
+	color: var(--border);
+	font-style: italic;
 }

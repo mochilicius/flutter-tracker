@@ -1,5 +1,79 @@
-<div class="placeholder">
-  <i class="pi pi-chart-bar placeholder-icon"></i>
-  <h2>Stats</h2>
-  <p>Coming soon</p>
+<div class="page-header">
+  <h1>Stats</h1>
 </div>
+<hr class="divider" />
+
+<div class="section-header">
+  <h2>24h Activity</h2>
+</div>
+
+<div class="chart-card">
+  @if (hasHourData) {
+    <svg class="hour-chart"
+      [attr.viewBox]="'0 0 ' + chartW + ' ' + svgH"
+      preserveAspectRatio="none">
+      <line x1="0" [attr.y1]="chartH" [attr.x2]="chartW" [attr.y2]="chartH"
+        stroke="var(--border)" stroke-width="0.5" />
+      @for (bar of hourBars; track bar.hour) {
+        @for (stack of bar.stacks; track stack.category) {
+          <rect
+            [attr.x]="bar.x + 1"
+            [attr.y]="stack.y"
+            width="9"
+            [attr.height]="stack.height"
+            [attr.fill]="stack.color"
+            rx="1.5"
+          />
+        }
+      }
+      @for (h of labelHours; track h) {
+        <text
+          [attr.x]="h * 11 + 5.5"
+          [attr.y]="chartH + 14"
+          text-anchor="middle"
+          class="hour-tick"
+        >{{ hourTickLabel(h) }}</text>
+      }
+    </svg>
+  } @else {
+    <div class="chart-empty">
+      <span class="app-empty">No activity tracked yet today</span>
+    </div>
+  }
+</div>
+
+<hr class="divider" />
+
+<div class="section-header">
+  <h2>Today by App</h2>
+</div>
+
+@if (hasAppData) {
+  <div class="breakdown-list">
+    @for (cat of categoryBreakdowns; track cat.name) {
+      <div class="cat-section">
+        <div class="cat-header">
+          <span class="cat-dot" [style.background]="cat.color"></span>
+          <span class="cat-name">{{ cat.name }}</span>
+          <span class="cat-total">{{ formatTime(cat.totalSeconds) }}</span>
+        </div>
+        <div class="cat-apps">
+          @for (app of cat.apps; track app.exe) {
+            <div class="app-row">
+              <span class="app-exe">{{ app.exe }}</span>
+              <div class="app-bar-wrap">
+                <div class="app-bar"
+                  [style.width.%]="app.fraction * 100"
+                  [style.background]="cat.color">
+                </div>
+              </div>
+              <span class="app-time">{{ formatTime(app.seconds) }}</span>
+            </div>
+          }
+        </div>
+      </div>
+    }
+  </div>
+} @else {
+  <span class="app-empty">No app activity tracked today</span>
+}

@@ -13,8 +13,8 @@
     "start:electron": "electron .",
     "start:desktop": "npm run start:wait && npm run start:electron",
     "dev": "concurrently -k \"npm run start:ui\" \"npm run start:python\" \"npm run start:electron\"",
-    "dist": "node -e \"require('fs').rmSync('dist/ui',{recursive:true,force:true})\" && npm run build && electron-builder",
-    "dist:backend": "node -e \"require('child_process').execSync('taskkill /F /IM ActivityTracker.exe /T',{stdio:'ignore'})\" ; pipenv run pyinstaller --noconfirm --windowed --clean --name ActivityTracker ..\\service\\main.py",
+    "dist": "npm run dist:backend && node -e \"require('fs').rmSync('dist/ui',{recursive:true,force:true})\" && npm run build && electron-builder",
+    "dist:backend": "node -e \"try{require('child_process').execSync('taskkill /F /IM ActivityTracker.exe /T',{stdio:'ignore'})}catch{}\" ; pipenv run python -m PyInstaller --noconfirm --windowed --clean --name ActivityTracker ..\\service\\main.py",
     "dist:electron": "npm run build && electron-builder",
     "dist:electron:dir": "npm run build && electron-builder --dir",
     "dist:electron:clean": "node -e \"require('fs').rmSync('dist/ui',{recursive:true,force:true})\" && npm run dist:electron",
@@ -71,7 +71,7 @@
         "to": "icon.ico"
       },
       {
-        "from": "../dist/ActivityTracker",
+        "from": "dist/ActivityTracker",
         "to": "backend"
       }
     ],

@@ -234,4 +234,27 @@ export class SettingsComponent {
       }
     });
   }
+
+  clearTimeData(): void {
+    const confirmed = confirm('Are you sure? This will permanently delete all tracked time data. Rules and category colors will be preserved. This action cannot be undone.');
+    if (!confirmed) {
+      return;
+    }
+
+    this.tracker.clearTimeData().subscribe({
+      next: () => {
+        this.statusMessage.set('Time data cleared. Refreshing...');
+        this.queueAutoDismiss();
+        setTimeout(() => {
+          if (typeof window !== 'undefined') {
+            window.location.reload();
+          }
+        }, 500);
+      },
+      error: () => {
+        this.statusMessage.set('Failed to clear time data.');
+        this.queueAutoDismiss();
+      }
+    });
+  }
 }
