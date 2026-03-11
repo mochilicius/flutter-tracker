@@ -110,4 +110,8 @@ export class TrackerService {
   setCategoryColor(category: string, color: string): Observable<{ ok: boolean }> {
     return this.http.post<{ ok: boolean }>(`${API}/category-colors`, { category, color });
   }
+
+  getAppIcon(exeName: string): Observable<{ data_url: string }> {
+    return this.http.get<{ data_url: string }>(`${API}/app-icon/${encodeURIComponent(exeName)}`);
+  }
 }

@@ -1,7 +1,12 @@
 from __future__ import annotations
 
 import atexit
+import base64
+import ctypes
+import ctypes.wintypes as wintypes
 import json
+import struct
+import zlib
 from dataclasses import dataclass
 from datetime import date, datetime, timedelta
 from pathlib import Path
@@ -15,11 +20,99 @@ import uvicorn
 import win32api
 import win32gui
 import win32process
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
 DATA_FILE = Path(__file__).parent.parent / "data" / "tracker_state.json"
+
+DEFAULT_CATEGORY_COLORS: dict[str, str] = {
+    "Development":   "#E9BCB5",
+    "Browsing":      "#927AD4",
+    "Entertainment": "#ECE5F0",
+    "System":        "#52508B",
+}
+
+
+def _rgba_to_png(width: int, height: int, rgba: bytes) -> bytes:
+    """Minimal PNG encoder for raw RGBA pixel data."""
+    def chunk(tag: bytes, data: bytes) -> bytes:
+        return struct.pack(">I", len(data)) + tag + data + struct.pack(">I", zlib.crc32(tag + data) & 0xFFFFFFFF)
+
+    raw = b"".join(b"\x00" + rgba[y * width * 4:(y + 1) * width * 4] for y in range(height))
+    return (
+        b"\x89PNG\r\n\x1a\n"
+        + chunk(b"IHDR", struct.pack(">IIBBBBB", width, height, 8, 6, 0, 0, 0))
+        + chunk(b"IDAT", zlib.compress(raw))
+        + chunk(b"IEND", b"")
+    )
+
+
+def _icon_to_png_base64(exe_path: str, size: int = 32) -> str | None:
+    """Extract the first icon from an exe and return as a PNG data URL."""
+    try:
+        user32 = ctypes.windll.user32
+        gdi32 = ctypes.windll.gdi32
+
+        large = (ctypes.c_void_p * 1)()
+        small = (ctypes.c_void_p * 1)()
+        n = ctypes.windll.shell32.ExtractIconExW(exe_path, 0, large, small, 1)
+        if n == 0 or not large[0]:
+            return None
+        hicon = large[0]
+
+        hdc_screen = user32.GetDC(None)
+        hdc_mem = gdi32.CreateCompatibleDC(hdc_screen)
+
+        class _BITMAPINFOHEADER(ctypes.Structure):
+            _fields_ = [
+                ("biSize",          wintypes.DWORD),
+                ("biWidth",         ctypes.c_int),
+                ("biHeight",        ctypes.c_int),
+                ("biPlanes",        wintypes.WORD),
+                ("biBitCount",      wintypes.WORD),
+                ("biCompression",   wintypes.DWORD),
+                ("biSizeImage",     wintypes.DWORD),
+                ("biXPelsPerMeter", ctypes.c_int),
+                ("biYPelsPerMeter", ctypes.c_int),
+                ("biClrUsed",       wintypes.DWORD),
+                ("biClrImportant",  wintypes.DWORD),
+            ]
+
+        bmi = _BITMAPINFOHEADER()
+        bmi.biSize = ctypes.sizeof(_BITMAPINFOHEADER)
+        bmi.biWidth = size
+        bmi.biHeight = -size   # negative = top-down
+        bmi.biPlanes = 1
+        bmi.biBitCount = 32
+        bmi.biCompression = 0  # BI_RGB
+
+        p_bits = ctypes.c_void_p()
+        hbmp = gdi32.CreateDIBSection(hdc_screen, ctypes.byref(bmi), 0, ctypes.byref(p_bits), None, 0)
+        old = gdi32.SelectObject(hdc_mem, hbmp)
+
+        user32.DrawIconEx(hdc_mem, 0, 0, hicon, size, size, 0, None, 3)  # DI_NORMAL = 3
+
+        buf = (ctypes.c_ubyte * (size * size * 4))()
+        ctypes.memmove(buf, p_bits, size * size * 4)
+
+        # BGRA → RGBA
+        rgba = bytearray(size * size * 4)
+        for i in range(size * size):
+            rgba[i * 4]     = buf[i * 4 + 2]  # R
+            rgba[i * 4 + 1] = buf[i * 4 + 1]  # G
+            rgba[i * 4 + 2] = buf[i * 4]      # B
+            rgba[i * 4 + 3] = buf[i * 4 + 3]  # A
+
+        gdi32.SelectObject(hdc_mem, old)
+        gdi32.DeleteObject(hbmp)
+        gdi32.DeleteDC(hdc_mem)
+        user32.ReleaseDC(None, hdc_screen)
+        user32.DestroyIcon(hicon)
+
+        return "data:image/png;base64," + base64.b64encode(_rgba_to_png(size, size, bytes(rgba))).decode()
+    except Exception:
+        return None
 
 
 def _friendly_name(exe_name: str) -> str:
@@ -86,6 +179,7 @@ class Tracker:
 
     def load(self, path: Path) -> None:
         if not path.exists():
+            self._category_colors = dict(DEFAULT_CATEGORY_COLORS)
             return
         try:
             data = json.loads(path.read_text(encoding="utf-8"))
@@ -531,6 +625,30 @@ def set_category_color(body: CategoryColorBody):
     if ok:
         tracker.save(DATA_FILE)
     return {"ok": ok}
+
+
+@app.get("/app-icon/{exe_name}")
+def get_app_icon(exe_name: str):
+    """Return the first icon of an exe as a PNG data URL, found via running processes."""
+    exe_path: str | None = None
+    for proc in psutil.process_iter(["name", "exe"]):
+        try:
+            if (proc.info.get("name") or "").lower() == exe_name.lower():
+                p = proc.info.get("exe")
+                if p and os.path.isfile(p):
+                    exe_path = p
+                    break
+        except (psutil.NoSuchProcess, psutil.AccessDenied):
+            pass
+
+    if not exe_path:
+        raise HTTPException(status_code=404, detail="Process not found")
+
+    data_url = _icon_to_png_base64(exe_path)
+    if not data_url:
+        raise HTTPException(status_code=404, detail="Could not extract icon")
+
+    return {"data_url": data_url}
 
 
 if __name__ == "__main__":

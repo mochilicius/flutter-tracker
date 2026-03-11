@@ -34,10 +34,10 @@
     <main class="content">
       @switch (activeTab()) {
         @case ('home') {
-          <app-main [pollIntervalMs]="pingMs()" />
+          <app-main [pollIntervalMs]="pingMs()" (openStatsForDate)="navigateToStats($event)" />
         }
         @case ('stats') {
-          <app-stats />
+          <app-stats [preselectedDate]="statsPreselectedDate()" />
         }
         @case ('settings') {
           <app-settings

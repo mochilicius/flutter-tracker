@@ -45,13 +45,36 @@
           <p-button icon="pi pi-times" size="small" [text]="true" severity="secondary"
             (onClick)="editingCategory.set(null)" />
         } @else {
-          <input
-            class="category-color"
-            type="color"
-            [value]="getCategoryColor(cat.name)"
-            [attr.aria-label]="'Accent color for ' + cat.name"
-            (change)="updateCategoryColor(cat.name, $any($event.target).value)"
-          />
+          <button class="category-color-button"
+            [style.background]="getCategoryColor(cat.name)"
+            [attr.aria-label]="'Edit color for ' + cat.name"
+            (click)="initColorPicker(cat.name)"
+            type="button">
+          </button>
+          @if (colorPickerCategory() === cat.name) {
+            <div class="color-picker-dropdown">
+              <p-colorpicker
+                [(ngModel)]="colorPickerValue"
+                format="hex"
+                [inline]="true"
+                (onChange)="onColorChange($any($event).value)"
+              />
+              <div class="picker-footer">
+                <span class="hex-prefix">#</span>
+                <input
+                  class="hex-input"
+                  [ngModel]="hexInput().replace('#','')"
+                  (ngModelChange)="updateHexInput('#' + $event)"
+                  placeholder="RRGGBB"
+                  maxlength="6"
+                  autocomplete="off"
+                  spellcheck="false"
+                />
+                <p-button icon="pi pi-times" size="small" [text]="true" severity="secondary" (onClick)="closeColorPicker()" />
+                <p-button icon="pi pi-check" size="small" [text]="true" severity="success" [disabled]="!isValidHex(hexInput())" (onClick)="applyColorAndCloseOverlay(cat.name)" />
+              </div>
+            </div>
+          }
           <span class="card-name">{{ cat.name }}</span>
           @if (getCatTime(cat.name)) {
             <span class="card-time">{{ getCatTime(cat.name) }}</span>
@@ -111,26 +134,18 @@
 
 <div class="donut-section">
   <div class="donut-chart">
-    <svg viewBox="0 0 100 100">
-      @for (seg of donutSegments(); track seg.category) {
-        <circle
-          cx="50" cy="50" r="45"
-          fill="none"
-          [attr.stroke]="seg.color"
-          stroke-width="8"
-          stroke-linecap="round"
-          [attr.stroke-dasharray]="seg.length + ' ' + (282.74 - seg.length)"
-          [attr.stroke-dashoffset]="'-' + seg.offset"
-        />
-      }
-      @if (donutSegments().length === 0) {
-        <circle cx="50" cy="50" r="45" fill="none" stroke="var(--border)" stroke-width="8" opacity="0.3" />
-      }
-    </svg>
-    <div class="donut-center">
-      <span class="donut-total">{{ totalTracked() }}</span>
-      <span class="donut-label">tracked</span>
-    </div>
+    @if (chartData()) {
+      <p-chart type="doughnut" [data]="chartData()" [options]="chartOptions()" class="chart-container" />
+      <div class="donut-center">
+        <span class="donut-total">{{ totalTracked() }}</span>
+        <span class="donut-label">tracked</span>
+      </div>
+    } @else {
+      <div class="chart-empty">
+        <span class="chart-empty-icon">📊</span>
+        <span class="chart-empty-text">No time tracked yet</span>
+      </div>
+    }
   </div>
   <div class="donut-legend">
     @for (seg of donutSegments(); track seg.category) {
@@ -151,32 +166,19 @@
   <div class="section-header">
     <h2>History</h2>
   </div>
-  <div class="history-grid">
+  <div class="day-cards-scroll">
     @for (day of pastDays(); track day.date) {
-      <div class="day-card">
-        <div class="day-donut">
-          <svg viewBox="0 0 100 100">
-            @for (seg of day.segments; track seg.category) {
-              <circle
-                cx="50" cy="50" r="45"
-                fill="none"
-                [attr.stroke]="seg.color"
-                stroke-width="9"
-                stroke-linecap="round"
-                [attr.stroke-dasharray]="seg.length + ' ' + (282.74 - seg.length)"
-                [attr.stroke-dashoffset]="'-' + seg.offset"
-              />
-            }
-            @if (day.segments.length === 0) {
-              <circle cx="50" cy="50" r="45" fill="none" stroke="var(--border)" stroke-width="9" opacity="0.3" />
-            }
-          </svg>
-          <div class="donut-center">
-            <span class="day-donut-total">{{ day.total }}</span>
-          </div>
+      <button class="day-card-selector" type="button" (click)="openStatsForDate.emit(day.date)">
+        <div class="day-chart-mini">
+          @if (day.chartData) {
+            <p-chart type="doughnut" [data]="day.chartData" [options]="day.chartOptions" [style]="{'width':'88px','height':'88px','display':'block'}" />
+            <div class="day-center">
+              <span class="day-label-centered">{{ day.label }}</span>
+              <span class="day-year-centered">{{ day.year }}</span>
+            </div>
+          }
         </div>
-        <div class="day-label">{{ day.label }}</div>
-      </div>
+      </button>
     }
   </div>
 }

@@ -1,4 +1,5 @@
-import { Component, Input, OnChanges, OnDestroy, OnInit, SimpleChanges, signal } from '@angular/core';
+import { Component, Input, Output, EventEmitter, OnChanges, OnDestroy, OnInit, SimpleChanges, signal, ChangeDetectionStrategy, ChangeDetectorRef, PLATFORM_ID, inject } from '@angular/core';
+import { isPlatformBrowser } from '@angular/common';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Button } from 'primeng/button';
@@ -6,25 +7,33 @@ import { InputText } from 'primeng/inputtext';
 import { AutoComplete } from 'primeng/autocomplete';
 import { FloatLabel } from 'primeng/floatlabel';
 import { Tag } from 'primeng/tag';
+import { ChartModule } from 'primeng/chart';
+import { ColorPicker } from 'primeng/colorpicker';
 import { TrackerService, Category, DonutSegment, ProcessInfo, Totals } from '../tracker.service';
 import { interval, Subscription } from 'rxjs';
 
 interface DayChart {
   date: string;
   label: string;
-  segments: DonutSegment[];
-  total: string;
+  year: string;
+  chartData: any;
+  chartOptions: any;
+  totalSeconds: number;
 }
 
 @Component({
   selector: 'app-main',
-  imports: [CommonModule, FormsModule, Button, InputText, AutoComplete, Tag, FloatLabel],
+  imports: [CommonModule, FormsModule, Button, InputText, AutoComplete, Tag, FloatLabel, ChartModule, ColorPicker],
   templateUrl: './main.html',
-  styleUrl: './main.scss'
+  styleUrl: './main.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class MainComponent implements OnInit, OnChanges, OnDestroy {
   @Input() pollIntervalMs = 15000;
+  @Output() openStatsForDate = new EventEmitter<string>();
 
+  chartData = signal<any>(null);
+  chartOptions = signal<any>(null);
   categories = signal<Category[]>([]);
   activeProcess = signal('');
   donutSegments = signal<DonutSegment[]>([]);
@@ -42,7 +51,14 @@ export class MainComponent implements OnInit, OnChanges, OnDestroy {
   processes = signal<ProcessInfo[]>([]);
   filteredProcesses = signal<ProcessInfo[]>([]);
 
+  colorPickerVisible = signal(false);
+  colorPickerCategory = signal<string | null>(null);
+  colorPickerValue = signal('#ffffff');
+  hexInput = signal('');
+
   private pollSub?: Subscription;
+  private platformId = inject(PLATFORM_ID);
+  private cd = inject(ChangeDetectorRef);
 
   constructor(private tracker: TrackerService) {}
 
@@ -85,44 +101,52 @@ export class MainComponent implements OnInit, OnChanges, OnDestroy {
 
   private loadHistoryDonuts(): void {
     this.tracker.getDailyTotals().subscribe(data => {
-      const today = new Date().toISOString().split('T')[0];
+      const today = this.getLocalDateString();
       const colors = data.category_colors ?? {};
       this.pastDays.set(
         Object.entries(data.daily_totals_seconds)
           .filter(([day]) => day !== today)
           .sort(([a], [b]) => b.localeCompare(a))
-          .map(([day, totals]) => {
-            const { segments, total } = this.buildSegments(totals, colors);
-            return { date: day, label: this.formatDate(day), segments, total };
+          .map(([date, totals]) => {
+            const [year, month, day] = date.split('-');
+            const labels = Object.keys(totals).filter(cat => (totals as any)[cat] > 0);
+            const dataValues = labels.map(cat => (totals as any)[cat]);
+            const bgColors = labels.map((cat, idx) =>
+              colors[cat] ?? this.DONUT_COLORS[idx % this.DONUT_COLORS.length]
+            );
+            const totalSeconds = dataValues.reduce((a, b) => a + b, 0);
+            return {
+              date,
+              label: `${day}/${month}`,
+              year,
+              totalSeconds,
+              chartData: {
+                labels,
+                datasets: [{
+                  data: dataValues,
+                  backgroundColor: bgColors,
+                  borderColor: 'transparent',
+                  borderRadius: 4
+                }]
+              },
+              chartOptions: {
+                animation: { animateRotate: false, duration: 0 },
+                cutout: '65%',
+                plugins: { legend: { display: false }, tooltip: { enabled: false } },
+                maintainAspectRatio: false
+              }
+            };
           })
       );
     });
   }
 
-  private buildSegments(
-    totals: Record<string, number>,
-    colors: Record<string, string>
-  ): { segments: DonutSegment[]; total: string } {
-    const entries = Object.entries(totals).filter(([, s]) => s > 0);
-    const totalSecs = entries.reduce((sum, [, s]) => sum + s, 0);
-    if (totalSecs === 0) return { segments: [], total: '0m' };
-    const CIRCUMFERENCE = 2 * Math.PI * 45;
-    const GAP = 4;
-    const usable = CIRCUMFERENCE - entries.length * GAP;
-    let offset = 0;
-    const segments: DonutSegment[] = entries.map(([cat, secs], i) => {
-      const len = (secs / totalSecs) * usable;
-      const seg: DonutSegment = {
-        color: colors[cat] ?? this.DONUT_COLORS[i % this.DONUT_COLORS.length],
-        offset,
-        length: len,
-        category: cat,
-        seconds: secs,
-      };
-      offset += len + GAP;
-      return seg;
-    });
-    return { segments, total: this.formatTime(totalSecs) };
+  private getLocalDateString(): string {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
   }
 
   formatDate(dateStr: string): string {
@@ -268,6 +292,44 @@ export class MainComponent implements OnInit, OnChanges, OnDestroy {
     return this.DONUT_COLORS[index % this.DONUT_COLORS.length];
   }
 
+  initColorPicker(category: string): void {
+    const currentColor = this.getCategoryColor(category);
+    this.colorPickerCategory.set(category);
+    this.colorPickerValue.set(currentColor);
+    this.hexInput.set(currentColor.toUpperCase());
+  }
+
+  onColorChange(color: string): void {
+    this.colorPickerValue.set(color);
+    this.hexInput.set(color.toUpperCase());
+  }
+
+  updateHexInput(hex: string): void {
+    const trimmed = hex.trim().toUpperCase();
+    this.hexInput.set(trimmed);
+    if (this.isValidHex(trimmed)) {
+      this.colorPickerValue.set(trimmed);
+    }
+  }
+
+  applyColorAndCloseOverlay(category: string): void {
+    const hex = this.hexInput().trim().toUpperCase();
+    if (this.isValidHex(hex)) {
+      this.updateCategoryColor(category, hex);
+      this.closeColorPicker();
+    }
+  }
+
+  closeColorPicker(): void {
+    this.colorPickerCategory.set(null);
+    this.colorPickerValue.set('#ffffff');
+    this.hexInput.set('');
+  }
+
+  isValidHex(hex: string): boolean {
+    return /^#[0-9A-F]{6}$/.test(hex);
+  }
+
   updateCategoryColor(category: string, color: string): void {
     const normalized = this.normalizeHexColor(color);
     if (!normalized) {
@@ -283,26 +345,99 @@ export class MainComponent implements OnInit, OnChanges, OnDestroy {
     const entries = Object.entries(t.totals_seconds).filter(([, s]) => s > 0);
     const total = entries.reduce((sum, [, s]) => sum + s, 0);
     this.totalTracked.set(this.formatTime(total));
-    if (total === 0) { this.donutSegments.set([]); return; }
 
+    if (total === 0) {
+      this.chartData.set(null);
+      this.donutSegments.set([]);
+      return;
+    }
+
+    // Build chart data for PrimeNG
+    if (isPlatformBrowser(this.platformId)) {
+      const documentStyle = getComputedStyle(document.documentElement);
+      const labels = entries.map(([cat]) => cat);
+      const data = entries.map(([, secs]) => secs);
+      const backgroundColor = entries.map(([cat], catIndex) => this.getCategoryColor(cat, catIndex));
+      const hoverBackgroundColor = backgroundColor.map(color => this.lightenColor(color));
+
+      const borderColor = documentStyle.getPropertyValue('--card-bg').trim() || '#1a1a1a';
+
+      const chartData = {
+        labels,
+        datasets: [
+          {
+            data,
+            backgroundColor,
+            hoverBackgroundColor,
+            borderColor,
+            borderWidth: 2,
+            borderRadius: 7.3
+          }
+        ]
+      };
+
+      const chartOptions = {
+        animation: {
+          animateRotate: false,
+          duration: 400
+        },
+        cutout: '65%',
+        plugins: {
+          legend: {
+            display: false
+          },
+          tooltip: {
+            callbacks: {
+              label: (context: any) => {
+                const seconds = context.parsed;
+                return this.formatTime(seconds);
+              }
+            }
+          }
+        },
+        maintainAspectRatio: false
+      };
+
+      this.chartData.set(chartData);
+      if (!this.chartOptions()) {
+        this.chartOptions.set(chartOptions);
+      }
+      this.cd.markForCheck();
+    }
+
+    // Keep donutSegments for legacy reference if needed
     const CIRCUMFERENCE = 2 * Math.PI * 45;
     const GAP = 4;
     const totalGap = entries.length * GAP;
     const usable = CIRCUMFERENCE - totalGap;
     let offset = 0;
-    const segments: DonutSegment[] = entries.map(([cat, secs], i) => {
+    const segments: DonutSegment[] = [];
+    for (const [cat, secs] of entries) {
       const len = (secs / total) * usable;
-      const seg: DonutSegment = {
-        color: this.getCategoryColor(cat, i),
+      segments.push({
+        color: this.getCategoryColor(cat, segments.length),
         offset,
         length: len,
         category: cat,
         seconds: secs
-      };
+      });
       offset += len + GAP;
-      return seg;
-    });
+    }
+
     this.donutSegments.set(segments);
+  }
+
+  private lightenColor(color: string): string {
+    // Simple color lightening for hover effect
+    try {
+      const hex = color.replace('#', '');
+      const r = Math.min(255, parseInt(hex.substr(0, 2), 16) + 30);
+      const g = Math.min(255, parseInt(hex.substr(2, 2), 16) + 30);
+      const b = Math.min(255, parseInt(hex.substr(4, 2), 16) + 30);
+      return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
+    } catch {
+      return color;
+    }
   }
 
   formatTime(seconds: number): string {

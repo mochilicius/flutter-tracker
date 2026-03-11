@@ -1,5 +1,5 @@
 import { Component, signal } from '@angular/core';
-import { NgIf } from '@angular/common';
+import { CommonModule } from '@angular/common';
 import { MainComponent } from './main/main';
 import { StatsComponent } from './stats/stats';
 import { SettingsComponent } from './settings/settings';
@@ -7,7 +7,7 @@ import { TrackerService } from './tracker.service';
 
 @Component({
   selector: 'app-root',
-  imports: [NgIf, MainComponent, StatsComponent, SettingsComponent],
+  imports: [CommonModule, MainComponent, StatsComponent, SettingsComponent],
   templateUrl: './app.html',
   styleUrl: './app.scss'
 })
@@ -20,6 +20,7 @@ export class App {
   private readonly defaultRetentionDays = 30;
 
   activeTab = signal<'home' | 'stats' | 'settings'>('home');
+  statsPreselectedDate = signal<string | null>(null);
   pingMs = signal<number>(this.readStoredPingMs());
   startOnBoot = signal<boolean>(this.readStoredBoolean(this.startOnBootStorageKey, false));
   minimizeToTrayOnClose = signal<boolean>(this.readStoredBoolean(this.minimizeToTrayStorageKey, false));
@@ -73,6 +74,11 @@ export class App {
     this.tracker.setRetentionDays(normalized).subscribe();
     this.persistElectronSettings();
     this.debugSettingsApplied();
+  }
+
+  navigateToStats(date: string): void {
+    this.statsPreselectedDate.set(date);
+    this.activeTab.set('stats');
   }
 
   minimizeWindow(): void {

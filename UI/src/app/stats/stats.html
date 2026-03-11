@@ -3,38 +3,46 @@
 </div>
 <hr class="divider" />
 
+<div class="day-selector">
+  <div class="day-cards-scroll">
+    @for (dayChart of dayDonutCharts(); track dayChart.date) {
+      <div
+        class="day-card-selector"
+        [class.active]="selectedDate() === dayChart.date"
+        (click)="selectDate(dayChart.date)"
+      >
+        <div class="day-chart-mini">
+          @if (dayChart.chartData) {
+            <p-chart
+              type="doughnut"
+              [data]="dayChart.chartData"
+              [options]="dayChart.chartOptions"
+              [style]="{ width: '88px', height: '88px', display: 'block' }"
+            />
+            <div class="day-center">
+              <span class="day-label-centered">{{ dayChart.label }}</span>
+              <span class="day-year-centered">2026</span>
+            </div>
+          }
+        </div>
+      </div>
+    }
+  </div>
+</div>
+
+<hr class="divider" />
+
 <div class="section-header">
   <h2>24h Activity</h2>
 </div>
 
 <div class="chart-card">
-  @if (hasHourData) {
-    <svg class="hour-chart"
-      [attr.viewBox]="'0 0 ' + chartW + ' ' + svgH"
-      preserveAspectRatio="none">
-      <line x1="0" [attr.y1]="chartH" [attr.x2]="chartW" [attr.y2]="chartH"
-        stroke="var(--border)" stroke-width="0.5" />
-      @for (bar of hourBars; track bar.hour) {
-        @for (stack of bar.stacks; track stack.category) {
-          <rect
-            [attr.x]="bar.x + 1"
-            [attr.y]="stack.y"
-            width="9"
-            [attr.height]="stack.height"
-            [attr.fill]="stack.color"
-            rx="1.5"
-          />
-        }
-      }
-      @for (h of labelHours; track h) {
-        <text
-          [attr.x]="h * 11 + 5.5"
-          [attr.y]="chartH + 14"
-          text-anchor="middle"
-          class="hour-tick"
-        >{{ hourTickLabel(h) }}</text>
-      }
-    </svg>
+  @if (hasHourData && chartData) {
+    <p-chart
+      type="bar"
+      [data]="chartData"
+      [options]="chartOptions"
+      class="activity-chart" />
   } @else {
     <div class="chart-empty">
       <span class="app-empty">No activity tracked yet today</span>
@@ -60,13 +68,14 @@
         <div class="cat-apps">
           @for (app of cat.apps; track app.exe) {
             <div class="app-row">
-              <span class="app-exe">{{ app.exe }}</span>
-              <div class="app-bar-wrap">
-                <div class="app-bar"
-                  [style.width.%]="app.fraction * 100"
-                  [style.background]="cat.color">
-                </div>
+              <div class="app-icon-wrap">
+                @if (appIcons()[app.exe]) {
+                  <img class="app-icon" [src]="appIcons()[app.exe]" [alt]="app.exe" />
+                } @else {
+                  <span class="app-icon-placeholder"><i class="pi pi-desktop"></i></span>
+                }
               </div>
+              <span class="app-name">{{ app.exe }}</span>
               <span class="app-time">{{ formatTime(app.seconds) }}</span>
             </div>
           }

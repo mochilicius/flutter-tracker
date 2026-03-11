@@ -56,3 +56,86 @@
   font-size: 48px;
   opacity: 0.4;
 }
+
+/* ── Day selector cards (home history + stats day picker) ── */
+.day-cards-scroll {
+  display: flex;
+  gap: 10px;
+  overflow-x: auto;
+  padding-bottom: 8px;
+  scroll-behavior: smooth;
+
+  &::-webkit-scrollbar {
+    height: 4px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: var(--border);
+    border-radius: 2px;
+
+    &:hover {
+      background: var(--muted);
+    }
+  }
+}
+
+.day-card-selector {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0;
+  padding: 4px;
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  cursor: pointer;
+  transition: all 150ms ease;
+  flex-shrink: 0;
+  width: 96px;
+
+  &:hover .day-chart-mini {
+    filter: brightness(1.1);
+  }
+
+  &.active .day-chart-mini {
+    box-shadow: inset 0 0 0 2px var(--accent);
+  }
+}
+
+.day-chart-mini {
+  position: relative;
+  width: 88px;
+  height: 88px;
+  flex-shrink: 0;
+  border-radius: 12px;
+  overflow: hidden;
+  transition: filter 150ms ease, box-shadow 150ms ease;
+}
+
+.day-center {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  gap: 2px;
+}
+
+.day-label-centered {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text);
+  text-align: center;
+}
+
+.day-year-centered {
+  font-size: 8px;
+  color: var(--muted);
+  text-align: center;
+}

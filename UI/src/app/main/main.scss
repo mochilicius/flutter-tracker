@@ -47,6 +47,7 @@
 	gap: 4px;
 	margin-bottom: 12px;
 	min-width: 0;
+	position: relative;
 }
 
 .card-name {
@@ -59,25 +60,23 @@
 	white-space: nowrap;
 }
 
-.category-color {
-	appearance: none;
-	-webkit-appearance: none;
+.category-color-button {
 	width: 18px;
 	height: 18px;
 	padding: 0;
 	border: 1px solid var(--border);
 	border-radius: 50%;
-	background: transparent;
 	cursor: pointer;
 	flex-shrink: 0;
+	transition: transform 100ms ease, box-shadow 100ms ease;
 
-	&::-webkit-color-swatch-wrapper {
-		padding: 0;
+	&:hover {
+		transform: scale(1.15);
+		box-shadow: 0 0 8px rgba(0, 0, 0, 0.3);
 	}
 
-	&::-webkit-color-swatch {
-		border: none;
-		border-radius: 50%;
+	&:active {
+		transform: scale(0.95);
 	}
 }
 
@@ -225,15 +224,34 @@
 	height: 160px;
 	flex-shrink: 0;
 
-	svg {
+	.chart-container {
 		width: 100%;
 		height: 100%;
-		transform: rotate(-90deg);
+		:deep(canvas) {
+			max-height: 160px !important;
+		}
 	}
+}
 
-	circle {
-		transition: stroke-dasharray 0.4s ease, stroke-dashoffset 0.4s ease;
-	}
+.chart-empty {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	width: 100%;
+	height: 100%;
+	gap: 8px;
+	color: var(--muted);
+	font-size: 12px;
+}
+
+.chart-empty-icon {
+	font-size: 32px;
+	opacity: 0.5;
+}
+
+.chart-empty-text {
+	text-align: center;
 }
 
 .donut-center {
@@ -301,63 +319,85 @@
 	}
 }
 
-/* ── History grid ── */
-.history-grid {
-	display: flex;
-	flex-wrap: wrap;
-	gap: 14px;
+/* ── History (day card deep canvas — shared styles in shared.scss) ── */
+.day-chart-mini {
+	:deep(canvas) {
+		width: 88px !important;
+		height: 88px !important;
+	}
 }
 
-.day-card {
-	display: flex;
-	flex-direction: column;
-	align-items: center;
-	gap: 8px;
-	padding: 12px;
-	background: var(--card-bg);
+/* ── Color picker dropdown ── */
+.color-picker-dropdown {
+	position: absolute;
+	top: 26px;
+	left: 0;
+	z-index: 1000;
 	border: 1px solid var(--border);
-	border-radius: 12px;
-	transition: border-color 120ms ease;
+	border-radius: 10px;
+	background: var(--card-bg);
+	box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+	padding: 0;
+	overflow: hidden;
 
-	&:hover {
-		border-color: var(--accent);
+	/* Remove inline-block baseline gap that creates space below the picker */
+	:deep(p-colorpicker) {
+		display: block !important;
+	}
+
+	:deep(.p-colorpicker-panel) {
+		border: none !important;
+		border-radius: 0 !important;
+		box-shadow: none !important;
+		margin: 0 !important;
+		padding: 0 !important;
+		background: transparent !important;
+	}
+
+	:deep(.p-colorpicker-content) {
+		padding: 0 !important;
 	}
 }
 
-.day-donut {
-	position: relative;
-	width: 88px;
-	height: 88px;
-	flex-shrink: 0;
+.picker-footer {
+	display: flex;
+	align-items: center;
+	gap: 2px;
+	padding: 4px 6px;
+	border-top: 1px solid var(--border);
+	background: transparent;
 
-	svg {
-		width: 100%;
-		height: 100%;
-		transform: rotate(-90deg);
+	:deep(.p-button) {
+		width: 22px !important;
+		height: 22px !important;
+		min-width: unset !important;
+		min-height: unset !important;
+		padding: 0 !important;
 	}
 
-	circle {
-		transition: stroke-dasharray 0.4s ease, stroke-dashoffset 0.4s ease;
-	}
-
-	.donut-center {
-		position: absolute;
-		inset: 0;
-		display: flex;
-		align-items: center;
-		justify-content: center;
+	:deep(.p-button-icon) {
+		font-size: 11px !important;
 	}
 }
 
-.day-donut-total {
-	font-size: 11px;
-	font-weight: 600;
-	color: var(--text);
-}
-
-.day-label {
-	font-size: 11px;
+.hex-prefix {
+	font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+	font-size: 12px;
 	color: var(--muted);
-	text-align: center;
-	white-space: nowrap;
+	padding-left: 2px;
+	user-select: none;
+}
+
+.hex-input {
+	flex: 1;
+	min-width: 0;
+	font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+	font-size: 12px;
+	letter-spacing: 0.06em;
+	text-transform: uppercase;
+	background: transparent;
+	border: none;
+	outline: none;
+	color: var(--text);
+	padding: 2px 2px;
 }
