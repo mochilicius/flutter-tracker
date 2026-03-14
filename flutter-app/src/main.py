@@ -180,6 +180,8 @@ class Tracker:
     def load(self, path: Path) -> None:
         if not path.exists():
             self._category_colors = dict(DEFAULT_CATEGORY_COLORS)
+            # Save immediately so the default categories persist
+            self.save(path)
             return
         try:
             data = json.loads(path.read_text(encoding="utf-8"))
