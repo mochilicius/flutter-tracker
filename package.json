@@ -7,7 +7,10 @@
     "start": "npm --prefix UI run start",
     "test": "npm --prefix UI run test",
     "install:ui": "npm --prefix UI install",
-    "dist": "npm --prefix UI run dist"
+    "dist": "npm --prefix UI run dist",
+    "dist:fast": "npm --prefix UI run dist:fast",
+    "dist:installer-fast": "npm --prefix UI run dist:installer-fast",
+    "dist:backend": "npm --prefix UI run dist:backend"
   },
   "devDependencies": {
     "electron": "^40.8.0"

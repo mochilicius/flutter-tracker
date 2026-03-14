@@ -19,7 +19,7 @@
     "dev": "concurrently -k \"npm run start:ui\" \"npm run start:python\" \"npm run start:electron\"",
     "dev:with-mock": "concurrently -k \"npm run start:ui\" \"npm run start:python\" \"npm run start:electron\" \"npm run mock:post:wait\"",
     "dist": "npm run dist:backend && node -e \"require('fs').rmSync('../build',{recursive:true,force:true})\" && npm run build && electron-builder",
-    "dist:backend": "node -e \"try{require('child_process').execSync('taskkill /F /IM ActivityTracker.exe /T',{stdio:'ignore'})}catch{}\" ; node -e \"require('fs').rmSync('../backend/ActivityTracker',{recursive:true,force:true})\" ; pipenv run python -m PyInstaller --noconfirm --windowed --clean --name ActivityTracker --distpath ../backend --onefile ../service/main.py",
+    "dist:backend": "node -e \"try{require('child_process').execSync('taskkill /F /IM ActivityTracker.exe /T',{stdio:'ignore'})}catch{}\" ; node -e \"require('fs').rmSync('../backend/ActivityTracker',{recursive:true,force:true})\" ; pipenv run python -m PyInstaller --noconfirm --clean --name ActivityTracker --distpath ../backend --onefile --collect-all uvicorn --collect-all fastapi --collect-all pydantic --windowed ../service/main.py",
     "dist:fast": "npm run dist:backend && npm run build && electron-builder --dir",
     "dist:installer-fast": "npm run dist:backend && npm run build && electron-builder --win --x64 --config.nsis.oneClick=false --config.compression=store --config.win.sign=false",
     "dist:electron": "npm run build && electron-builder",
