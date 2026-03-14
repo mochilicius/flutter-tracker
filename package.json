@@ -10,7 +10,6 @@
     "dist": "npm --prefix UI run dist"
   },
   "devDependencies": {
-    "electron": "^40.8.0",
-    "electron-builder": "^26.8.1"
+    "electron": "^40.8.0"
   }
 }

@@ -6,6 +6,19 @@
         <path d="M6.3 19.9l8.2-8.2"></path>
       </svg>
       <span>Flutter</span>
+      @if (backendConnected()) {
+        <div class="health-indicator connected" pTooltip="Python Backend connected - Activity tracking is active" tooltipPosition="bottom" showDelay="100" hideDelay="100">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M7 12l2 2 4-4" stroke="currentColor" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
+          </svg>
+        </div>
+      } @else {
+        <div class="health-indicator disconnected" pTooltip="Python Backend not found - Activity tracking is disabled" tooltipPosition="bottom" showDelay="100" hideDelay="100">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M7 7l10 10M17 7L7 17"></path>
+          </svg>
+        </div>
+      }
     </div>
 
     <div class="window-controls">

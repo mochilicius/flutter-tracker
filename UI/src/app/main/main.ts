@@ -11,6 +11,7 @@ import { ChartModule } from 'primeng/chart';
 import { ColorPicker } from 'primeng/colorpicker';
 import { TrackerService, Category, DonutSegment, ProcessInfo, Totals } from '../tracker.service';
 import { interval, Subscription } from 'rxjs';
+import { App } from '../app';
 
 interface DayChart {
   date: string;
@@ -60,7 +61,7 @@ export class MainComponent implements OnInit, OnChanges, OnDestroy {
   private platformId = inject(PLATFORM_ID);
   private cd = inject(ChangeDetectorRef);
 
-  constructor(private tracker: TrackerService) {}
+  constructor(private tracker: TrackerService, private app: App) {}
 
   private readonly DONUT_COLORS = [
     '#907AD6', '#EDBBB4', '#ECE5F0', '#4F518C', '#c792ea',
@@ -93,6 +94,9 @@ export class MainComponent implements OnInit, OnChanges, OnDestroy {
   }
 
   private refreshTotals(): void {
+    // Trigger health check when we ping the backend for totals
+    this.app.triggerHealthCheck();
+
     this.tracker.getTotals().subscribe(t => {
       this.activeProcess.set(t.active_process);
       this.buildDonut(t);

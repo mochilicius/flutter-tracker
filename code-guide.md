@@ -1052,11 +1052,260 @@ npm run dist             # PyInstaller + electron-builder → final installers
 
 ---
 
+## Backend Connectivity & Health Monitoring System (2026-03-13)
+
+### Problem Solved
+Fixed issue where Python backend was not running in `win-unpackaged` builds, causing the app to appear functional but with no activity tracking capability.
+
+### Solution Overview
+Implemented comprehensive backend health monitoring with visual indicators, loading screen improvements, and build optimizations.
+
+---
+
+### Loading Screen Enhancements
+
+#### **Electron Main Process (`electron/main.cjs`)**
+- **Backend Detection**: Added detection for missing `ActivityTracker.exe` in win-unpackaged builds
+- **Error State Injection**: Uses `win.webContents.executeJavaScript()` to update loading screen when backend is missing
+- **Health Check Integration**: Backend health status is communicated to loading screen during startup
+
+**Key Code Changes**:
+```javascript
+// Detect missing backend exe and show error state
+if (!fs.existsSync(backendExe)) {
+  log("[startup] no backend exe — marking backend unavailable");
+  win.webContents.executeJavaScript(`
+    document.body.classList.add('backend-missing');
+    document.querySelector('.status').textContent = 'Python Backend not found';
+  `);
+}
+```
+
+#### **Loading Screen (`electron/loading.html`)**
+- **Titlebar Integration**: Added full titlebar with minimize/close controls for user control during startup errors
+- **Error State Styling**: Added CSS for red X icon and error text when backend is missing
+- **Consistent UI**: Matches main app titlebar design for seamless user experience
+
+**Features**:
+- ✅ Working minimize/close buttons during loading
+- ✅ Red X icon (✕) when backend not found
+- ✅ Error message: "Python Backend not found"
+- ✅ Same styling as main app titlebar
+
+---
+
+### Angular App Health Monitoring
+
+#### **Backend Health Service (`UI/src/app/tracker.service.ts`)**
+- **Health Endpoint**: Added `health()` method to call backend `/health` endpoint
+- **Observable Pattern**: Returns Observable for reactive health status updates
+
+```typescript
+health(): Observable<{ status: string }> {
+  return this.http.get<{ status: string }>(`${API}/health`);
+}
+```
+
+#### **App Component Health Monitoring (`UI/src/app/app.ts`)**
+- **Real-time Monitoring**: Continuous health checks every 2 seconds (was 5 seconds)
+- **Activity-triggered Checks**: Health check triggered on every app usage ping (`refreshTotals()`)
+- **Visual Status Indicators**: Green checkmark (✓) for connected, red X (✕) for disconnected
+- **PrimeNG Tooltips**: Professional tooltips showing connection status
+
+**Key Features**:
+- ✅ Green ✓ icon: "Python Backend connected - Activity tracking is active"
+- ✅ Red ✕ icon: "Python Backend not found - Activity tracking is disabled"
+- ✅ Responsive updates: Status changes within 2 seconds
+- ✅ Hover tooltips with detailed status information
+
+**Health Check Logic**:
+```typescript
+private checkBackendHealth(): void {
+  this.tracker.health().subscribe({
+    next: () => {
+      this.backendConnected.set(true);
+      this.backendError.set('');
+    },
+    error: (err) => {
+      this.backendConnected.set(false);
+      this.backendError.set('Python Backend not found - Activity tracking is disabled');
+    }
+  });
+}
+```
+
+#### **Main Component Integration (`UI/src/app/main/main.ts`)**
+- **Health Check Trigger**: Every `refreshTotals()` call also triggers backend health check
+- **Real-time Updates**: App usage pings now update health status immediately
+- **Constructor Injection**: App component injected to access `triggerHealthCheck()` method
+
+```typescript
+private refreshTotals(): void {
+  // Trigger health check when we ping the backend for totals
+  this.app.triggerHealthCheck();
+  
+  this.tracker.getTotals().subscribe(t => {
+    this.activeProcess.set(t.active_process);
+    this.buildDonut(t);
+  });
+}
+```
+
+---
+
+### Build System Optimization
+
+#### **PyInstaller Backend Build Fixes**
+- **DLL Loading Issues**: Fixed Python DLL loading errors by switching to `--onefile` mode
+- **Path Resolution**: Resolved `python313.dll` not found errors in packaged builds
+- **Dependency Bundling**: Ensured all Python runtime dependencies are properly included
+
+**Before**: Directory mode with separate `_internal/` folder (DLL loading issues)
+**After**: Single executable with bundled runtime (self-contained)
+
+#### **Build Configuration (`UI/package.json`)**
+- **Output Directory**: Changed from `UI/dist/` to root `build/` folder for cleaner organization
+- **Build Scripts**: Added fast development build commands
+- **Compression Optimization**: Changed from `maximum` to `normal` for faster builds
+- **Electron Builder**: Optimized configuration for development vs production builds
+
+---
+
+### Build Commands
+
+#### **Development Builds (Fast)**
+```bash
+# Fast portable build (no installer, ~30-45 seconds)
+npm run dist:fast
+
+# Output: build/win-unpacked/Flutter.exe (run directly, no installation)
+# Features: Normal compression, no code signing delays
+```
+
+#### **Production Builds (Complete)**
+```bash
+# Full installer with code signing (~2-3 minutes)
+npm run dist
+
+# Output: build/Flutter Setup 0.0.0.exe (installer for distribution)
+# Features: Code signing, maximum compression, professional installer
+```
+
+#### **Backend-only Build**
+```bash
+# Rebuild Python backend only
+npm run dist:backend
+
+# Output: backend/ActivityTracker/ActivityTracker.exe
+# Uses: --onefile mode for DLL loading fixes
+```
+
+---
+
+### Performance Improvements
+
+#### **Build Time Reductions**
+- **Compression**: Changed from `maximum` to `normal` (faster builds, slightly larger files)
+- **Development Mode**: Added `--dir` builds to skip installer creation
+- **Dependency Optimization**: Disabled unnecessary rebuilds (`npmRebuild: false`)
+
+#### **Installation Speed**
+- **Development Installer**: Fast unsigned installer for testing
+- **Portable Version**: No installation required - run executable directly
+- **Code Signing Impact**: Identified as major contributor to slow installation times
+
+---
+
+### File Structure Changes
+
+#### **New Build Organization**
+```
+d:\documents\GitHub\activity-tracking-app\
+├── build\                          # All build outputs (new location)
+│   ├── Flutter Setup 0.0.0.exe     # Production installer
+│   ├── win-unpacked\               # Portable version
+│   │   ├── Flutter.exe             # Main application
+│   │   └── resources\
+│   │       ├── backend\
+│   │       │   └── ActivityTracker.exe  # Python backend (fixed DLL loading)
+│   │       ├── app\                 # Angular UI
+│   │       └── electron\            # Electron files
+│   └── builder-effective-config.yaml
+└── backend\                         # Python backend build location
+    └── ActivityTracker\
+        └── ActivityTracker.exe      # PyInstaller output (onefile mode)
+```
+
+#### **Removed Locations**
+- `UI/dist/` - No longer used for build outputs
+- `UI/win-unpacked/` - Moved to root `build/`
+
+---
+
+### Health Indicator Styling (`UI/src/app/app.scss`)
+
+#### **Visual Design**
+- **Connected State**: Green circle with white checkmark (#22C55E)
+- **Disconnected State**: Red circle with white X (#ED4242)
+- **Hover Effects**: Scale animation and background color enhancement
+- **Consistent Sizing**: 16px diameter, 10px icons, centered alignment
+
+```scss
+.health-indicator {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  margin-left: 4px;
+  transition: all 120ms ease;
+  
+  &.connected {
+    background: rgba(34, 197, 94, 0.2);
+    color: #22C55E;
+  }
+  
+  &.disconnected {
+    background: rgba(237, 66, 66, 0.2);
+    color: #ED4242;
+  }
+}
+```
+
+---
+
+### Troubleshooting Guide
+
+#### **Common Issues & Solutions**
+
+1. **"Python Backend not found" Error**
+   - **Cause**: Backend executable missing or failed to start
+   - **Solution**: Check win-unpackaged build includes backend properly
+   - **Visual**: Red X icon appears in titlebar
+
+2. **"Failed to load python dll" Error**
+   - **Cause**: PyInstaller DLL loading issues in directory mode
+   - **Solution**: Fixed with `--onefile` PyInstaller mode
+   - **Build Command**: `npm run dist:backend`
+
+3. **Slow Build Times**
+   - **Cause**: Maximum compression and code signing
+   - **Solution**: Use `npm run dist:fast` for development
+   - **Impact**: 30-45 seconds vs 2-3 minutes
+
+4. **Slow Installation**
+   - **Cause**: Code signing verification and maximum compression
+   - **Solution**: Use portable version or development installer
+   - **Alternative**: Run `build/win-unpacked/Flutter.exe` directly
+
+---
+
 ## Important Notes for AI Agents
 
 1. **Windows-Only**: Code uses `win32gui`, `win32process`, `pywin32`. Will fail on macOS/Linux.
 2. **Hardcoded URLs**: Backend = `127.0.0.1:8000`, UI dev server = `127.0.0.1:4317`. Any port change requires updating multiple places.
 3. **No Explicit Synchronization**: Python backend has no thread locks; relies on GIL. Could cause subtle race conditions under load.
+4. **Build Organization**: All build outputs now go to root `build/` folder for cleaner development workspace.
+5. **Health Monitoring**: Backend connectivity is continuously monitored and visually indicated in the titlebar.
+6. **DLL Loading**: Python backend uses `--onefile` PyInstaller mode to resolve DLL loading issues in packaged builds.
 4. **App Name Inconsistency**: Product is "Flutter" (UI branding) but Python exe is "ActivityTracker" in some places. Be aware when renaming.
 5. **`desktop.html` is Dead Code**: References old `pywebview` API. Not used in current Electron architecture. Safe to ignore.
 6. **Signal-Based Reactivity**: All UI state uses Angular signals (`signal()`, `.set()`, `.update()`), not RxJS subjects. Keep this pattern consistent.

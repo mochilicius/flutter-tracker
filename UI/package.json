@@ -1,6 +1,8 @@
 {
   "name": "ui",
   "version": "0.0.0",
+  "description": "Flutter - Activity tracking application for monitoring foreground application usage",
+  "author": "Flutter Development Team",
   "scripts": {
     "ng": "ng",
     "start": "ng serve",
@@ -16,12 +18,14 @@
     "start:desktop": "npm run start:wait && npm run start:electron",
     "dev": "concurrently -k \"npm run start:ui\" \"npm run start:python\" \"npm run start:electron\"",
     "dev:with-mock": "concurrently -k \"npm run start:ui\" \"npm run start:python\" \"npm run start:electron\" \"npm run mock:post:wait\"",
-    "dist": "npm run dist:backend && node -e \"require('fs').rmSync('dist/ui',{recursive:true,force:true})\" && npm run build && electron-builder",
-    "dist:backend": "node -e \"try{require('child_process').execSync('taskkill /F /IM ActivityTracker.exe /T',{stdio:'ignore'})}catch{}\" ; pipenv run python -m PyInstaller --noconfirm --windowed --clean --name ActivityTracker ..\\service\\main.py",
+    "dist": "npm run dist:backend && node -e \"require('fs').rmSync('../build',{recursive:true,force:true})\" && npm run build && electron-builder",
+    "dist:backend": "node -e \"try{require('child_process').execSync('taskkill /F /IM ActivityTracker.exe /T',{stdio:'ignore'})}catch{}\" ; node -e \"require('fs').rmSync('../backend/ActivityTracker',{recursive:true,force:true})\" ; pipenv run python -m PyInstaller --noconfirm --windowed --clean --name ActivityTracker --distpath ../backend --onefile ../service/main.py",
+    "dist:fast": "npm run dist:backend && npm run build && electron-builder --dir",
+    "dist:installer-fast": "npm run dist:backend && npm run build && electron-builder --win --x64 --config.nsis.oneClick=false --config.compression=store --config.win.sign=false",
     "dist:electron": "npm run build && electron-builder",
     "dist:electron:dir": "npm run build && electron-builder --dir",
-    "dist:electron:clean": "node -e \"require('fs').rmSync('dist/ui',{recursive:true,force:true})\" && npm run dist:electron",
-    "dist:electron:dir:clean": "node -e \"require('fs').rmSync('dist/ui',{recursive:true,force:true})\" && npm run dist:electron:dir"
+    "dist:electron:clean": "node -e \"require('fs').rmSync('../build',{recursive:true,force:true})\" && npm run dist:electron",
+    "dist:electron:dir:clean": "node -e \"require('fs').rmSync('../build',{recursive:true,force:true})\" && npm run dist:electron:dir"
   },
   "private": true,
   "packageManager": "npm@11.11.0",
@@ -50,7 +54,7 @@
     "@types/express": "^5.0.1",
     "@types/node": "^20.17.19",
     "concurrently": "^9.2.1",
-    "electron": "^40.7.0",
+    "electron": "^40.8.0",
     "electron-builder": "^26.8.1",
     "jsdom": "^28.0.0",
     "prettier": "^3.8.1",
@@ -63,11 +67,17 @@
     "appId": "com.flutter.app",
     "productName": "Flutter",
     "asar": false,
+    "compression": "normal",
+    "removePackageScripts": true,
+    "nodeGypRebuild": false,
+    "npmRebuild": false,
+    "buildDependenciesFromSource": false,
     "extraMetadata": {
       "main": "main.cjs"
     },
     "directories": {
-      "buildResources": "../assets"
+      "buildResources": "../assets",
+      "output": "../build"
     },
     "extraResources": [
       {
@@ -75,7 +85,7 @@
         "to": "icon.ico"
       },
       {
-        "from": "dist/ActivityTracker",
+        "from": "../backend/ActivityTracker",
         "to": "backend"
       }
     ],

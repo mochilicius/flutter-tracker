@@ -166,7 +166,11 @@ async function createWindow() {
         await pollUrl("http://127.0.0.1:8000/health");
         log("[startup] backend ready");
       } else {
-        log("[startup] no backend exe — loading UI directly");
+        log("[startup] no backend exe — marking backend unavailable");
+        win.webContents.executeJavaScript(`
+          document.body.classList.add('backend-missing');
+          document.querySelector('.status').textContent = 'Python Backend not found';
+        `);
       }
       const uiUrl = url.format({ pathname: UI_FILE, protocol: "file:", slashes: true });
       log("[startup] loading UI:", uiUrl);
@@ -174,8 +178,15 @@ async function createWindow() {
     }
   } catch (e) {
     log("[startup] error:", e.message, "— loading UI anyway");
-    if (isDev) win.loadURL(DEV_URL);
-    else win.loadURL(url.format({ pathname: UI_FILE, protocol: "file:", slashes: true }));
+    if (isDev) {
+      win.loadURL(DEV_URL);
+    } else {
+      win.webContents.executeJavaScript(`
+        document.body.classList.add('backend-missing');
+        document.querySelector('.status').textContent = 'Python Backend not found';
+      `);
+      win.loadURL(url.format({ pathname: UI_FILE, protocol: "file:", slashes: true }));
+    }
   }
 
   win.on("close", () => log("[window] close, isQuitting:", isQuitting));

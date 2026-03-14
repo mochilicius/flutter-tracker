@@ -11,13 +11,79 @@
       height: 100%;
       background: #2C2A4A;
       display: flex;
-      align-items: center;
-      justify-content: center;
+      flex-direction: column;
       font-family: 'Segoe UI', sans-serif;
       color: #ECE5F0;
       user-select: none;
-      -webkit-app-region: drag;
       overflow: hidden;
+    }
+    .titlebar {
+      -webkit-app-region: drag;
+      height: 44px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 12px;
+      border-bottom: 1px solid #4F518C;
+      background: #352f5a;
+    }
+    .brand {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      letter-spacing: 0.02em;
+    }
+    .feather-icon {
+      width: 16px;
+      height: 16px;
+      stroke: #ECE5F0;
+      fill: none;
+      stroke-width: 1.8;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+    .window-controls {
+      -webkit-app-region: no-drag;
+      display: inline-flex;
+      gap: 8px;
+    }
+    .control-btn {
+      width: 26px;
+      height: 26px;
+      border: 1px solid #4F518C;
+      border-radius: 999px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      background: #352f5a;
+      color: #b8aec5;
+      cursor: pointer;
+      transition: 120ms ease;
+    }
+    .control-btn svg {
+      width: 13px;
+      height: 13px;
+      fill: none;
+      stroke: currentColor;
+      stroke-width: 2;
+      stroke-linecap: round;
+    }
+    .control-btn:hover {
+      border-color: #907AD6;
+      color: #907AD6;
+    }
+    .control-btn.close:hover {
+      background: #4a2f3f;
+      border-color: #EDBBB4;
+      color: #EDBBB4;
+    }
+    .loading-content {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
     }
     .wrap {
       display: flex;
@@ -36,6 +102,24 @@
     @keyframes spin {
       to { transform: rotate(360deg); }
     }
+    .error-icon {
+      width: 52px;
+      height: 52px;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      border-radius: 50%;
+      background: rgba(237, 66, 66, 0.2);
+      color: #ED4242;
+      font-size: 32px;
+      font-weight: bold;
+    }
+    .backend-missing .spinner {
+      display: none;
+    }
+    .backend-missing .error-icon {
+      display: flex;
+    }
     .app-name {
       font-size: 20px;
       font-weight: 600;
@@ -47,13 +131,36 @@
       color: #b8aec5;
       letter-spacing: 0.05em;
     }
+    .backend-missing .status {
+      color: #ED4242;
+    }
   </style>
 </head>
 <body>
-  <div class="wrap">
-    <div class="spinner"></div>
-    <div class="app-name">Flutter</div>
-    <div class="status">Starting services...</div>
+  <header class="titlebar">
+    <div class="brand">
+      <svg viewBox="0 0 24 24" aria-hidden="true" class="feather-icon">
+        <path d="M20 4c-4 0-8 2-10.5 5.4c-2.1 2.7-3.2 5.9-3.2 9.3v1.3h1.3c3.4 0 6.6-1.1 9.3-3.2C20 14.3 22 10 22 6V4z"></path>
+        <path d="M6.3 19.9l8.2-8.2"></path>
+      </svg>
+      <span>Flutter</span>
+    </div>
+    <div class="window-controls">
+      <button type="button" class="control-btn" aria-label="Minimize" onclick="window.electronAPI?.minimizeWindow?.()">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 12h12"></path></svg>
+      </button>
+      <button type="button" class="control-btn close" aria-label="Close" onclick="window.electronAPI?.closeWindow?.()">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 7l10 10M17 7L7 17"></path></svg>
+      </button>
+    </div>
+  </header>
+  <div class="loading-content">
+    <div class="wrap">
+      <div class="spinner"></div>
+      <div class="error-icon">✕</div>
+      <div class="app-name">Flutter</div>
+      <div class="status">Starting services...</div>
+    </div>
   </div>
 </body>
 </html>

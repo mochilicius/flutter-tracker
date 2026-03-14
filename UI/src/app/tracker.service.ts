@@ -53,6 +53,10 @@ export interface ImportStateBody {
 export class TrackerService {
   constructor(private http: HttpClient) {}
 
+  health(): Observable<{ status: string }> {
+    return this.http.get<{ status: string }>(`${API}/health`);
+  }
+
   getRules(): Observable<Rule[]> {
     return this.http.get<Rule[]>(`${API}/rules`);
   }
