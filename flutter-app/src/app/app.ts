@@ -54,6 +54,8 @@ export class App implements OnDestroy {
   }
 
   private checkBackendHealth(): void {
+    const wasConnected = this.backendConnected();
+
     this.tracker.health().subscribe({
       next: () => {
         this.backendConnected.set(true);
@@ -61,7 +63,13 @@ export class App implements OnDestroy {
       },
       error: (err) => {
         this.backendConnected.set(false);
-        this.backendError.set('Python Backend not found - Activity tracking is disabled');
+
+        // Show different message based on whether it was previously connected
+        if (wasConnected) {
+          this.backendError.set('Lost connection to server');
+        } else {
+          this.backendError.set('Unable to start Backend Server');
+        }
       }
     });
   }

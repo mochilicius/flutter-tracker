@@ -10,7 +10,7 @@
     "watch": "ng build --watch --configuration development",
     "test": "ng test",
     "start:ui": "ng serve --host 127.0.0.1 --port 4317",
-    "start:python": "cd .. && pipenv run uvicorn service.main:app --host 127.0.0.1 --port 8000",
+    "start:python": "cd .. && set PYTHONPATH=%PYTHONPATH%;flutter-app && pipenv run uvicorn flutter-app.src.main:app --host 127.0.0.1 --port 8000",
     "start:wait": "wait-on http-get://127.0.0.1:4317 http-get://127.0.0.1:8000/health",
     "mock:post": "node scripts/generate-mock-stats.js",
     "mock:post:wait": "wait-on http-get://127.0.0.1:8000/health && npm run mock:post && node -e \"setInterval(()=>{},1000)\"",
@@ -19,9 +19,9 @@
     "dev": "concurrently -k \"npm run start:ui\" \"npm run start:python\" \"npm run start:electron\"",
     "dev:with-mock": "concurrently -k \"npm run start:ui\" \"npm run start:python\" \"npm run start:electron\" \"npm run mock:post:wait\"",
     "dist": "npm run dist:backend && node -e \"require('fs').rmSync('../build',{recursive:true,force:true})\" && npm run build && electron-builder",
-    "dist:backend": "node -e \"try{require('child_process').execSync('taskkill /F /IM ActivityTracker.exe /T',{stdio:'ignore'})}catch{}\" ; node -e \"require('fs').rmSync('../backend/ActivityTracker',{recursive:true,force:true})\" ; pipenv run python -m PyInstaller --noconfirm --clean --name ActivityTracker --distpath ../backend --onefile --collect-all uvicorn --collect-all fastapi --collect-all pydantic --windowed ../service/main.py",
+    "dist:backend": "node -e \"try{require('child_process').execSync('taskkill /F /IM ActivityTracker.exe /T',{stdio:'ignore'})}catch{}\" ; node -e \"require('fs').rmSync('../build/ActivityTrackerBuild',{recursive:true,force:true})\" ; cd .. && pipenv run pyinstaller --noconfirm --distpath build ActivityTracker.spec",
     "dist:fast": "npm run dist:backend && npm run build && electron-builder --dir",
-    "dist:installer-fast": "npm run dist:backend && npm run build && electron-builder --win --x64 --config.nsis.oneClick=false --config.compression=store --config.win.sign=false",
+    "dist:installer-fast": "npm run dist:backend && npm run build && electron-builder --win --x64 --config.nsis.oneClick=false --config.compression=store",
     "dist:electron": "npm run build && electron-builder",
     "dist:electron:dir": "npm run build && electron-builder --dir",
     "dist:electron:clean": "node -e \"require('fs').rmSync('../build',{recursive:true,force:true})\" && npm run dist:electron",
@@ -85,12 +85,12 @@
         "to": "icon.ico"
       },
       {
-        "from": "../backend/ActivityTracker",
+        "from": "../flutter-app/build/ActivityTrackerBuild",
         "to": "backend"
       }
     ],
     "files": [
-      "dist/ui/**/*",
+      "dist/flutter-app/**/*",
       {
         "from": "../electron",
         "to": ".",
@@ -101,13 +101,6 @@
       {
         "from": "../data",
         "to": "data",
-        "filter": [
-          "**/*"
-        ]
-      },
-      {
-        "from": "../service",
-        "to": "service",
         "filter": [
           "**/*"
         ]
@@ -124,7 +117,8 @@
       "oneClick": false,
       "allowToChangeInstallationDirectory": true,
       "createDesktopShortcut": true,
-      "createStartMenuShortcut": true
+      "createStartMenuShortcut": true,
+      "artifactName": "Install-Flutter-${version}.${ext}"
     }
   }
 }

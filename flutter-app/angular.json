@@ -38,6 +38,7 @@
           "configurations": {
             "production": {
               "baseHref": "./",
+              "outputPath": "dist/flutter-app",
               "budgets": [
                 {
                   "type": "initial",

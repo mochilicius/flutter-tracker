@@ -2,15 +2,15 @@
   "name": "activity-tracking-app-root",
   "private": true,
   "scripts": {
-    "dev": "npm --prefix UI run dev",
-    "build": "npm --prefix UI run build",
-    "start": "npm --prefix UI run start",
-    "test": "npm --prefix UI run test",
-    "install:ui": "npm --prefix UI install",
-    "dist": "npm --prefix UI run dist",
-    "dist:fast": "npm --prefix UI run dist:fast",
-    "dist:installer-fast": "npm --prefix UI run dist:installer-fast",
-    "dist:backend": "npm --prefix UI run dist:backend"
+    "dev": "npm --prefix flutter-app run dev",
+    "build": "npm --prefix flutter-app run build",
+    "start": "npm --prefix flutter-app run start",
+    "test": "npm --prefix flutter-app run test",
+    "install:ui": "npm --prefix flutter-app install",
+    "dist": "npm --prefix flutter-app run dist",
+    "dist:fast": "npm --prefix flutter-app run dist:fast",
+    "dist:installer-fast": "npm --prefix flutter-app run dist:installer-fast",
+    "dist:backend": "node -e \"try{require('child_process').execSync('taskkill /F /IM ActivityTracker.exe /T',{stdio:'ignore'})}catch{}\" ; node -e \"require('fs').rmSync('build/ActivityTrackerBuild',{recursive:true,force:true})\" && pipenv run pyinstaller --noconfirm --distpath build ActivityTracker.spec"
   },
   "devDependencies": {
     "electron": "^40.8.0"

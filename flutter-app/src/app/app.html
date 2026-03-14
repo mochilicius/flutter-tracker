@@ -6,19 +6,6 @@
         <path d="M6.3 19.9l8.2-8.2"></path>
       </svg>
       <span>Flutter</span>
-      @if (backendConnected()) {
-        <div class="health-indicator connected" pTooltip="Python Backend connected - Activity tracking is active" tooltipPosition="bottom" showDelay="100" hideDelay="100">
-          <svg viewBox="0 0 24 24" aria-hidden="true">
-            <path d="M7 12l2 2 4-4" stroke="currentColor" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
-          </svg>
-        </div>
-      } @else {
-        <div class="health-indicator disconnected" pTooltip="Python Backend not found - Activity tracking is disabled" tooltipPosition="bottom" showDelay="100" hideDelay="100">
-          <svg viewBox="0 0 24 24" aria-hidden="true">
-            <path d="M7 7l10 10M17 7L7 17"></path>
-          </svg>
-        </div>
-      }
     </div>
 
     <div class="window-controls">
@@ -41,6 +28,14 @@
       </button>
       <button class="nav-btn" [class.active]="activeTab() === 'settings'" (click)="activeTab.set('settings')" aria-label="Settings">
         <i class="pi pi-cog"></i>
+      </button>
+
+      <!-- Health Status Indicator -->
+      <button class="nav-btn health-indicator" [class.connected]="backendConnected()" [class.disconnected]="!backendConnected()" pTooltip="Backend server is OK" tooltipPosition="right" showDelay="100" hideDelay="100" *ngIf="backendConnected()">
+        <i class="pi pi-check"></i>
+      </button>
+      <button class="nav-btn health-indicator" [class.connected]="backendConnected()" [class.disconnected]="!backendConnected()" [pTooltip]="backendError()" tooltipPosition="right" showDelay="100" hideDelay="100" *ngIf="!backendConnected()">
+        <i class="pi pi-times"></i>
       </button>
     </nav>
 

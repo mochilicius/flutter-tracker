@@ -1,0 +1,15 @@
+{
+  "rules": {},
+  "totals_seconds": {},
+  "app_totals_seconds": {},
+  "daily_totals_seconds": {},
+  "daily_app_totals_seconds": {},
+  "daily_hourly_seconds": {},
+  "category_colors": {
+    "Development": "#E9BCB5",
+    "Browsing": "#927AD4",
+    "Entertainment": "#ECE5F0",
+    "System": "#52508B"
+  },
+  "retention_days": 30
+}

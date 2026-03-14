@@ -20,7 +20,7 @@ log("userData:", app.getPath("userData"));
 // ── Paths ─────────────────────────────────────────────────────────────────────
 const isDev = !app.isPackaged;
 const DEV_URL = "http://127.0.0.1:4317";
-const UI_FILE = path.join(__dirname, "dist", "ui", "browser", "index.html");
+const UI_FILE = path.join(__dirname, "dist", "flutter-app", "index.html");
 const SETTINGS_FILE = path.join(__dirname, isDev ? ".." : "", "data", "ui_settings.json");
 const ICON_PATH = isDev
   ? path.join(__dirname, "..", "assets", "icon.ico")

@@ -145,10 +145,20 @@
 	display: flex;
 	flex-direction: column;
 	align-items: center;
-	gap: 4px;
 	padding: 12px 0;
 	background: var(--panel);
 	border-right: 1px solid var(--border);
+	height: 100%;
+
+	// Add space between regular nav buttons and health indicator
+	& > :not(.health-indicator) {
+		margin-bottom: 4px;
+	}
+
+	// Health indicator goes to bottom
+	.health-indicator {
+		margin-top: auto;
+	}
 }
 
 .nav-btn {
@@ -173,6 +183,36 @@
 	&.active {
 		background: rgba(144, 122, 214, 0.2);
 		color: var(--accent);
+	}
+
+	// Health indicator specific styles
+	&.health-indicator {
+		margin-top: auto;
+		cursor: default;
+
+		&.connected {
+			background: rgba(34, 197, 94, 0.15);
+			color: #22C55E;
+			border: 1px solid rgba(34, 197, 94, 0.3);
+
+			&:hover {
+				background: rgba(34, 197, 94, 0.25);
+				border-color: rgba(34, 197, 94, 0.5);
+				transform: scale(1.05);
+			}
+		}
+
+		&.disconnected {
+			background: rgba(237, 66, 66, 0.15);
+			color: #ED4242;
+			border: 1px solid rgba(237, 66, 66, 0.3);
+
+			&:hover {
+				background: rgba(237, 66, 66, 0.25);
+				border-color: rgba(237, 66, 66, 0.5);
+				transform: scale(1.05);
+			}
+		}
 	}
 }
 

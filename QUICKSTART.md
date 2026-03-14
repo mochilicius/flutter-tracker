@@ -20,7 +20,7 @@ A Windows desktop app that tracks foreground application usage by category with 
 ```bash
 # Install dependencies
 npm install
-cd UI && npm install && cd ..
+cd flutter-app && npm install && cd ..
 
 # Install Python deps
 pip install -r requirements.txt
@@ -43,15 +43,21 @@ This launches:
 ## Building
 
 ```bash
-# Build production packages
-npm run build
+# Fast development build (portable, ~30-45 seconds)
+npm run dist:fast
+
+# Full production build (installer, ~2-3 minutes)  
 npm run dist
+
+# Fast installer build (for testing)
+npm run dist:installer-fast
 ```
 
 Outputs:
-- Angular build: `UI/dist/`
-- Python backend: `dist/ActivityTracker.exe`
-- Electron installer: `Flutter.exe` (NSIS)
+- Angular build: `flutter-app/dist/flutter-app/` (temporary)
+- Python backend: `build/ActivityTrackerBuild/` (working directory)
+- Electron portable: `build/win-unpacked/Flutter.exe`
+- Electron installer: `build/Install-Flutter.exe` (NSIS)
 
 ## Architecture
 
@@ -79,10 +85,10 @@ Angular UI + Electron Shell
 
 | File | Purpose |
 |------|---------|
-| `/service/main.py` | FastAPI backend + activity tracker |
-| `/UI/src/app/main/main.ts` | Tab: Time Management (categories, today's stats) |
-| `/UI/src/app/stats/stats.ts` | Tab: Stats (24h chart, app breakdown) |
-| `/UI/src/app/settings/settings.ts` | Tab: Settings (data, retention, import/export) |
+| `/flutter-app/src/main.py` | FastAPI backend + activity tracker |
+| `/flutter-app/src/app/main/main.ts` | Tab: Time Management (categories, today's stats) |
+| `/flutter-app/src/app/stats/stats.ts` | Tab: Stats (24h chart, app breakdown) |
+| `/flutter-app/src/app/settings/settings.ts` | Tab: Settings (data, retention, import/export) |
 | `/electron/main.cjs` | Electron main process, IPC, backend spawning |
 | `/data/tracker_state.json` | Runtime state (categories, rules, tracking data) |
 
