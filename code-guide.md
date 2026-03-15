@@ -13,18 +13,19 @@
 
 ## 🚀 Quick Start & Build Commands
 
-### Setup
+### 📦 Setup
 ```bash
 npm install
+pipenv install  # Install Python dependencies
 ```
 
-### Development
+### 🔧 Development
 ```bash
 npm run dev              # Start development server
 npm run dev:with-mock    # Start with mock data
 ```
 
-### Build & Package
+### 🏗️ Build & Package
 ```bash
 npm run dist:fast              # Quick build (no installer)
 npm run dist:fast-installer    # Quick build with installer
