@@ -1,19 +1,28 @@
 # ─────────────────────────────────────────────────────────────────────────────
-# Build & Distribution
+# Main Branch - Production GitIgnore
 # ─────────────────────────────────────────────────────────────────────────────
+
+# Build & Distribution
 dist/
 build/
 UI/dist/
 UI/.angular/
 out/
 release/
+Releases/
 *.exe
 *.msi
 *.dmg
+ActivityTracker-Setup*.exe
+*.nupkg
+*.snupkg
+*.yml
+electron-builder.yml
+electron-builder-cache/
+backend/
+activitytracker/internal
 
-# ─────────────────────────────────────────────────────────────────────────────
-# Node.js / npm / yarn
-# ─────────────────────────────────────────────────────────────────────────────
+# Node.js
 node_modules/
 UI/node_modules/
 npm-debug.log*
@@ -24,9 +33,7 @@ yarn-error.log*
 .yarn/cache/
 .yarn/install-state.gz
 
-# ─────────────────────────────────────────────────────────────────────────────
-# Python / pip / venv
-# ─────────────────────────────────────────────────────────────────────────────
+# Python
 __pycache__/
 *.py[cod]
 *.pyo
@@ -37,37 +44,36 @@ env/
 ENV/
 *.egg-info/
 .eggs/
-dist/
-build/
 *.egg
 .pytest_cache/
 .coverage
 htmlcov/
 
-# ─────────────────────────────────────────────────────────────────────────────
-# PyInstaller / spec files
-# ─────────────────────────────────────────────────────────────────────────────
+# PyInstaller
 *.spec.bak
 warn-*.txt
 xref-*.html
 
-# ─────────────────────────────────────────────────────────────────────────────
-# Runtime data (user-specific, not source code)
-# ─────────────────────────────────────────────────────────────────────────────
+# Runtime Data
 data/tracker_state.json
 data/ui_settings.json
 
-# ─────────────────────────────────────────────────────────────────────────────
-# Logs & debug files
-# ─────────────────────────────────────────────────────────────────────────────
+# Logs
 *.log
 *.log.*
 debug.log
 logs/
 
-# ─────────────────────────────────────────────────────────────────────────────
-# IDEs & Editors
-# ─────────────────────────────────────────────────────────────────────────────
+# Caches
+.angular/
+.sass-cache/
+.webpack/
+coverage/
+tmp/
+out-tsc/
+.ngcache/
+
+# IDE & Editors
 .vscode/*
 !.vscode/settings.json
 !.vscode/tasks.json
@@ -81,22 +87,8 @@ logs/
 *.swp
 *.swo
 *~
-.DS_Store
-.AppleDouble
-.LSOverride
 
-# ─────────────────────────────────────────────────────────────────────────────
-# Editor directories
-# ─────────────────────────────────────────────────────────────────────────────
-.vscode/
-.idea/
-.sublime-text/
-.vim/
-.emacs.d/
-
-# ─────────────────────────────────────────────────────────────────────────────
-# Operating System files
-# ─────────────────────────────────────────────────────────────────────────────
+# OS Files
 .DS_Store
 .DS_Store?
 ._*
@@ -107,20 +99,13 @@ Thumbs.db
 desktop.ini
 *.manifest
 
-# ─────────────────────────────────────────────────────────────────────────────
-# Temporary & backup files
-# ─────────────────────────────────────────────────────────────────────────────
+# Temporary & Backup
 *.tmp
 *.temp
 *.bak
 *.backup
-*.swp
-*.swo
-*~
 
-# ─────────────────────────────────────────────────────────────────────────────
-# Environment variables
-# ─────────────────────────────────────────────────────────────────────────────
+# Environment
 .env
 .env.local
 .env.*.local

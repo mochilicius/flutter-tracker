@@ -1,4 +1,5 @@
-# See https://docs.github.com/get-started/getting-started-with-git/ignoring-files for more about ignoring files.
+# Flutter App - Main Branch Production GitIgnore
+# Exclude all build files, keep only source code
 
 # Compiled output
 /dist
@@ -30,14 +31,13 @@ yarn-error.log
 .history/*
 
 # Miscellaneous
-/.angular/cache
 .sass-cache/
 /connect.lock
 /coverage
 /libpeerconnection.log
 testem.log
 /typings
-__screenshots__/
+__screenshots__
 
 # System files
 .DS_Store
