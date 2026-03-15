@@ -6,6 +6,31 @@
 
 ---
 
+## Branch Strategy
+
+- **dev**: Development branch with build files included
+- **main**: Production branch with build files excluded
+
+## 🚀 Quick Start & Build Commands
+
+### Setup
+```bash
+npm install
+```
+
+### Development
+```bash
+npm run dev              # Start development server
+npm run dev:with-mock    # Start with mock data
+```
+
+### Build & Package
+```bash
+npm run dist:fast              # Quick build (no installer)
+npm run dist:fast-installer    # Quick build with installer
+npm run dist                    # Full production build
+```
+
 ## Quick Reference: File Structure & Purpose
 
 This codebase is a **Windows activity tracker** that monitors foreground application usage and displays it in a timeline/analytics dashboard.

@@ -1,138 +1,38 @@
 # ─────────────────────────────────────────────────────────────────────────────
-# Build & Distribution
+# Dev Branch
 # ─────────────────────────────────────────────────────────────────────────────
-dist/
-build/
-UI/dist/
-UI/.angular/
-out/
-release/
-*.exe
-*.msi
-*.dmg
+# Only exclude truly unnecessary files, keep build files for development
 
-# ─────────────────────────────────────────────────────────────────────────────
-# Release & Installer Files
-# ─────────────────────────────────────────────────────────────────────────────
-release/
-Releases/
-ActivityTracker-Setup*.exe
-*.nupkg
-*.snupkg
-*.yml
-electron-builder.yml
-electron-builder-cache/
-
-# ─────────────────────────────────────────────────────────────────────────────
-# Node.js / npm / yarn
-# ─────────────────────────────────────────────────────────────────────────────
+# Node.js dependencies (large, can be recreated)
 node_modules/
-UI/node_modules/
 npm-debug.log*
-npm-error.log*
-yarn-debug.log*
-yarn-error.log*
-.npm/
-.yarn/cache/
-.yarn/install-state.gz
+yarn-error.log
 
-# ─────────────────────────────────────────────────────────────────────────────
-# Python / pip / venv
-# ─────────────────────────────────────────────────────────────────────────────
+# Built folder (exclude from dev branch)
+build
+data
+backend
+
+# npm install generated folders
+.angular/
+.sass-cache/
+.webpack/
+coverage/
+tmp/
+out-tsc/
+.ngcache/
+
+# Python cache (can be recreated)
 __pycache__/
-*.py[cod]
+*.pyc
 *.pyo
-*.pyd
-.venv/
-venv/
-env/
-ENV/
-*.egg-info/
-.eggs/
-dist/
-build/
-*.egg
-.pytest_cache/
-.coverage
-htmlcov/
 
-# ─────────────────────────────────────────────────────────────────────────────
-# PyInstaller / spec files
-# ─────────────────────────────────────────────────────────────────────────────
-*.spec.bak
-warn-*.txt
-xref-*.html
-
-# ─────────────────────────────────────────────────────────────────────────────
-# Runtime data (user-specific, not source code)
-# ─────────────────────────────────────────────────────────────────────────────
-data/tracker_state.json
-data/ui_settings.json
-
-# ─────────────────────────────────────────────────────────────────────────────
-# Logs & debug files
-# ─────────────────────────────────────────────────────────────────────────────
-*.log
-*.log.*
-debug.log
-logs/
-
-# ─────────────────────────────────────────────────────────────────────────────
-# IDEs & Editors
-# ─────────────────────────────────────────────────────────────────────────────
-.vscode/*
-!.vscode/settings.json
-!.vscode/tasks.json
-!.vscode/launch.json
-!.vscode/extensions.json
-!.vscode/mcp.json
+# IDE files that shouldn't be shared
+.vscode/settings.json
 .idea/
-.idea_modules/
-*.sublime-workspace
-*.sublime-project
 *.swp
 *.swo
-*~
-.DS_Store
-.AppleDouble
-.LSOverride
 
-# ─────────────────────────────────────────────────────────────────────────────
-# Editor directories
-# ─────────────────────────────────────────────────────────────────────────────
-.vscode/
-.idea/
-.sublime-text/
-.vim/
-.emacs.d/
-
-# ─────────────────────────────────────────────────────────────────────────────
-# Operating System files
-# ─────────────────────────────────────────────────────────────────────────────
+# OS files
 .DS_Store
-.DS_Store?
-._*
-.Spotlight-V100
-.Trashes
-ehthumbs.db
 Thumbs.db
-desktop.ini
-*.manifest
-
-# ─────────────────────────────────────────────────────────────────────────────
-# Temporary & backup files
-# ─────────────────────────────────────────────────────────────────────────────
-*.tmp
-*.temp
-*.bak
-*.backup
-*.swp
-*.swo
-*~
-
-# ─────────────────────────────────────────────────────────────────────────────
-# Environment variables
-# ─────────────────────────────────────────────────────────────────────────────
-.env
-.env.local
-.env.*.local
