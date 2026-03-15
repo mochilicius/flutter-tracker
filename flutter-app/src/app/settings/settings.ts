@@ -113,10 +113,16 @@ export class SettingsComponent {
       next: () => {
         this.statusMessage.set('Cache reloaded from state file. Refreshing...');
         this.queueAutoDismiss();
+
+        // Trigger data refresh in parent app component
         setTimeout(() => {
-          if (typeof window !== 'undefined') {
-            window.location.reload();
-          }
+          // Emit changes to trigger refresh
+          this.pingValueChange.emit(this._pingValue);
+          setTimeout(() => {
+            if (typeof window !== 'undefined') {
+              window.location.reload();
+            }
+          }, 100);
         }, 500);
       },
       error: () => {
@@ -167,28 +173,48 @@ export class SettingsComponent {
   }
 
   exportCache(): void {
+    this.statusMessage.set('Exporting cache...');
+    this.queueAutoDismiss();
+
     this.tracker.exportState().subscribe({
       next: (state) => {
-        const now = new Date();
-        const stamp = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
-        const fileName = `tracker_state_export_${stamp}.json`;
-        const content = JSON.stringify(state, null, 2);
-        const blob = new Blob([content], { type: 'application/json' });
-        const url = URL.createObjectURL(blob);
+        try {
+          const now = new Date();
+          const stamp = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+          const fileName = `tracker_state_export_${stamp}.json`;
+          const content = JSON.stringify(state, null, 2);
 
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = fileName;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        URL.revokeObjectURL(url);
+          // Create blob and download
+          const blob = new Blob([content], { type: 'application/json' });
+          const url = URL.createObjectURL(blob);
 
-        this.statusMessage.set('Cache exported as JSON.');
+          // Create download link with proper attributes
+          const link = document.createElement('a');
+          link.href = url;
+          link.download = fileName;
+          link.style.display = 'none';
+          link.setAttribute('target', '_blank');
+
+          // Add to DOM, click, and clean up
+          document.body.appendChild(link);
+          link.click();
+
+          // Wait a bit before cleanup to ensure download starts
+          setTimeout(() => {
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+          }, 100);
+
+          this.statusMessage.set(`Cache exported as ${fileName}. Check your Downloads folder.`);
+        } catch (error) {
+          console.error('Export error:', error);
+          this.statusMessage.set('Failed to create export file.');
+        }
         this.queueAutoDismiss();
       },
-      error: () => {
-        this.statusMessage.set('Failed to export cache.');
+      error: (error) => {
+        console.error('Export API error:', error);
+        this.statusMessage.set('Failed to export cache - backend may be unavailable.');
         this.queueAutoDismiss();
       }
     });

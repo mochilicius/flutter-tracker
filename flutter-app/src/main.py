@@ -180,9 +180,29 @@ class Tracker:
     def load(self, path: Path) -> None:
         if not path.exists():
             self._category_colors = dict(DEFAULT_CATEGORY_COLORS)
-            # Save immediately so the default categories persist
+            # Add basic process rules for common applications
+            self._rules = {
+                "code.exe": "Development",
+                "vscode.exe": "Development",
+                "node.exe": "Development",
+                "python.exe": "Development",
+                "chrome.exe": "Browsing",
+                "firefox.exe": "Browsing",
+                "edge.exe": "Browsing",
+                "explorer.exe": "System",
+                "taskmgr.exe": "System",
+                "cmd.exe": "System",
+                "powershell.exe": "System",
+                "spotify.exe": "Entertainment",
+                "vlc.exe": "Entertainment",
+                "netflix.exe": "Entertainment",
+                "discord.exe": "Entertainment",
+            }
+            # Save immediately so the default categories and rules persist
             self.save(path)
             return
+
+        # Load existing data
         try:
             data = json.loads(path.read_text(encoding="utf-8"))
             self._rules = {k.lower(): v for k, v in data.get("rules", {}).items()}
@@ -199,6 +219,38 @@ class Tracker:
             self._retention_days = self._normalize_retention_days(data.get("retention_days", 30))
         except Exception:
             pass
+
+        # Ensure default categories exist
+        categories_added = False
+        for category, color in DEFAULT_CATEGORY_COLORS.items():
+            if category not in self._category_colors:
+                self._category_colors[category] = color
+                categories_added = True
+
+        # Add basic rules if none exist
+        if not self._rules:
+            self._rules = {
+                "code.exe": "Development",
+                "vscode.exe": "Development",
+                "node.exe": "Development",
+                "python.exe": "Development",
+                "chrome.exe": "Browsing",
+                "firefox.exe": "Browsing",
+                "edge.exe": "Browsing",
+                "explorer.exe": "System",
+                "taskmgr.exe": "System",
+                "cmd.exe": "System",
+                "powershell.exe": "System",
+                "spotify.exe": "Entertainment",
+                "vlc.exe": "Entertainment",
+                "netflix.exe": "Entertainment",
+                "discord.exe": "Entertainment",
+            }
+            categories_added = True
+
+        # Save if we added new categories or rules
+        if categories_added:
+            self.save(path)
 
     def save(self, path: Path) -> None:
         path.parent.mkdir(parents=True, exist_ok=True)

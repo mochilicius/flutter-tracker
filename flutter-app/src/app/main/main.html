@@ -90,6 +90,11 @@
       <div class="app-list">
         @for (app of cat.apps; track app) {
           <span class="app-tag">
+            @if (appIcons()[app]) {
+              <img class="app-tag__icon" [src]="appIcons()[app]" [alt]="app" />
+            } @else {
+              <span class="app-tag__icon-placeholder"><i class="pi pi-desktop"></i></span>
+            }
             <span class="app-tag__label">{{ app }}</span>
             @if (getAppTime(app)) {
               <span class="app-tag__time">{{ getAppTime(app) }}</span>

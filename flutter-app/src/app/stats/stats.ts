@@ -5,7 +5,7 @@ import { ChartModule } from 'primeng/chart';
 import { TrackerService } from '../tracker.service';
 import { forkJoin, interval, Subscription, catchError, of } from 'rxjs';
 
-const CHART_H = 48;
+const CHART_H = 32;
 const COL_W = 11;
 
 interface HourStack {

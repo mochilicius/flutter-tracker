@@ -3,6 +3,7 @@
   "private": true,
   "scripts": {
     "dev": "npm --prefix flutter-app run dev",
+    "dev:with-mock": "npm --prefix flutter-app run dev:with-mock",
     "build": "npm --prefix flutter-app run build",
     "start": "npm --prefix flutter-app run start",
     "test": "npm --prefix flutter-app run test",

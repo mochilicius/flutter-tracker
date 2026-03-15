@@ -44,11 +44,11 @@ export class App implements OnDestroy {
   }
 
   private startHealthCheck(): void {
-    // Check health immediately
+    // Initial health check
     this.checkBackendHealth();
 
-    // Then check every 2 seconds for more responsiveness
-    this.healthCheckSub = interval(2000).subscribe(() => {
+    // Then check every 15 seconds (coordinated with main app polling)
+    this.healthCheckSub = interval(15000).subscribe(() => {
       this.checkBackendHealth();
     });
   }

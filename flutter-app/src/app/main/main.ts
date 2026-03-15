@@ -10,7 +10,7 @@ import { Tag } from 'primeng/tag';
 import { ChartModule } from 'primeng/chart';
 import { ColorPicker } from 'primeng/colorpicker';
 import { TrackerService, Category, DonutSegment, ProcessInfo, Totals } from '../tracker.service';
-import { interval, Subscription } from 'rxjs';
+import { interval, Subscription, catchError, of } from 'rxjs';
 import { App } from '../app';
 
 interface DayChart {
@@ -42,6 +42,7 @@ export class MainComponent implements OnInit, OnChanges, OnDestroy {
   categoryTotals = signal<Record<string, number>>({});
   appTotals = signal<Record<string, number>>({});
   categoryColors = signal<Record<string, string>>({});
+  appIcons = signal<Record<string, string>>({});
   pastDays = signal<DayChart[]>([]);
   showAddCategory = signal(false);
   newCategoryName = '';
@@ -429,6 +430,23 @@ export class MainComponent implements OnInit, OnChanges, OnDestroy {
     }
 
     this.donutSegments.set(segments);
+
+    // Load app icons for all apps
+    this.loadAppIcons();
+  }
+
+  private loadAppIcons(): void {
+    const cached = this.appIcons();
+    const allApps = this.categories().flatMap(cat => cat.apps);
+    const exeNames = allApps.filter(exe => !cached[exe]);
+
+    for (const exe of exeNames) {
+      this.tracker.getAppIcon(exe).pipe(catchError(() => of(null))).subscribe(res => {
+        if (res?.data_url) {
+          this.appIcons.update(icons => ({ ...icons, [exe]: res.data_url }));
+        }
+      });
+    }
   }
 
   private lightenColor(color: string): string {

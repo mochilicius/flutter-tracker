@@ -115,12 +115,31 @@
 .app-tag {
 	display: inline-flex;
 	align-items: center;
-	gap: 4px;
+	gap: 6px;
 	background: rgba(79, 81, 140, 0.35);
 	border-radius: 999px;
-	padding: 3px 8px 3px 10px;
-	font-size: 12px;
+	padding: 6px 12px 6px 14px;
+	font-size: 14px;
 	color: var(--text);
+
+	&__icon {
+		width: 16px;
+		height: 16px;
+		border-radius: 2px;
+		object-fit: cover;
+	}
+
+	&__icon-placeholder {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		width: 16px;
+		height: 16px;
+		border-radius: 2px;
+		background: rgba(255, 255, 255, 0.1);
+		color: var(--muted);
+		font-size: 10px;
+	}
 
 	&__label {
 		max-width: 120px;
